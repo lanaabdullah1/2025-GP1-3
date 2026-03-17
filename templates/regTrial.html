@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eyecept | Register</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="register.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div id="header-placeholder"></div>
+
+  <!-- PAGE CONTENT -->
+  <main>
+    <div class="card register-card">
+      <h1 class="form-title">Add User</h1>
+
+      <form class="register-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            type="password"
+            name="password"
+            placeholder="Enter password"
+            required
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8}$"
+            title="Password must be exactly 8 characters and include one uppercase letter, one lowercase letter, and one special character.">
+
+            <small class="password-hint"> Must be 8 characters with uppercase, lowercase, and a
+                special character. </small>
+        </div>
+
+
+           
+     <div class="form-group shift-selector">
+
+        <label>Shift Type</label>
+
+        <input type="hidden" name="shiftType" id="shiftType">
+
+        <div class="shift-group">
+        <p class="shift-group-title">Weekdays</p>
+
+        <div class="shift-options">
+        <button type="button" class="shift-btn" data-value="wd_morning">Morning</button>
+        <button type="button" class="shift-btn" data-value="wd_evening">Evening</button>
+        <button type="button" class="shift-btn" data-value="wd_night">Night</button>
+        </div>
+        </div>
+
+        <div class="shift-group">
+        <p class="shift-group-title">Weekend</p>
+
+        <div class="shift-options">
+        <button type="button" class="shift-btn" data-value="we_morning">Morning</button>
+        <button type="button" class="shift-btn" data-value="we_evening">Evening</button>
+        <button type="button" class="shift-btn" data-value="we_night">Night</button>
+        </div>
+        </div>
+
+        <small class="shift-hint">Choose one shift.</small>
+
+      </div>
+
+
+
+      
+
+        <button type="submit" class="submit-btn">Add</button>
+      </form>
+    </div>
+  </main>
+
+
+
+
+  <!-- LOGOUT MODAL -->
+  <div id="logoutModal" class="modal">
+    <div class="modal-box">
+      <h3>Confirm Logout</h3>
+      <p>Are you sure you want to log out?</p>
+      <div class="modal-actions">
+        <button id="cancelLogout">Cancel</button>
+        <button id="confirmLogout" class="danger-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <!-- FOOTER -->
+  <div id="footer-placeholder"></div>
+
+  <!-- LOAD HEADER + FOOTER -->
+  <script src="include.js"></script>
+
+  <script>
+  const shiftButtons = document.querySelectorAll(".shift-btn");
+  const shiftInput = document.getElementById("shiftType");
+
+  shiftButtons.forEach(button => {
+    button.addEventListener("click", function () {
+      shiftButtons.forEach(btn => btn.classList.remove("active"));
+      this.classList.add("active");
+      shiftInput.value = this.dataset.value;
+    });
+  });
+</script>
+
+
+</body>
+</html>

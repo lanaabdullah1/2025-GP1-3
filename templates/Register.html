@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eyecept | Register</title>
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+
+
+</head>
+<body>
+
+  
+
+  <!-- HEADER -->
+    {% include 'header-auth.html' %}
+
+  <!-- PAGE CONTENT -->
+  <main>
+   <div class="card register-card">
+      <h1 class="form-title">Add User</h1>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for message in messages %}
+            <p class="flash-message">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+  <form class="register-form" method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter email" required>
+        </div>
+
+
+        <div class="form-group">
+          <label for="password">Password</label>
+
+           <div class="password-wrapper">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter password"
+                required
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$"
+              >
+
+            <button type="button" id="togglePassword" class="toggle-password">
+              👁
+            </button>
+          </div>
+
+                <ul class="password-rules">
+                    <li id="length">❌ At least 8 characters</li>
+                    <li id="lower">❌ One lowercase letter</li>
+                    <li id="upper">❌ One uppercase letter</li>
+                    <li id="special">❌ One special character</li>
+                </ul>
+
+
+                
+<!--
+                
+
+            <small class="password-hint">
+              Must be 8 characters with uppercase, lowercase, and a special character.
+            </small>
+
+          -->
+          </div>
+
+
+
+        
+
+
+
+        <div class="form-group">
+          <label for="shiftType">Shift Type</label>
+
+
+          <select id="shiftType" name="shiftType" required>
+            <option value="" disabled selected hidden>Select shift type</option>
+
+            <optgroup label="Weekdays">
+
+            <option value="wd_morning">Morning</option>
+            <option value="wd_evening">Evening</option>
+            <option value="wd_night">Night</option>
+
+            </optgroup>
+
+            <optgroup label="Weekend">
+
+            <option value="we_morning">Morning</option>
+            <option value="we_evening">Evening</option>
+            <option value="we_night">Night</option>
+            
+            </optgroup>
+    </select>
+
+
+
+        </div>
+
+        <button type="submit" class="submit-btn">Add</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- LOGOUT MODAL -->
+  <div id="logoutModal" class="modal">
+    <div class="modal-box">
+      <h3>Confirm Logout</h3>
+      <p>Are you sure you want to log out?</p>
+      <div class="modal-actions">
+        <button id="cancelLogout">Cancel</button>
+        <button id="confirmLogout" class="danger-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  {% include 'footer.html' %}
+
+  <!-- LOAD HEADER + FOOTER -->
+  <script src="include.js"></script> <script src="{{ url_for('static', filename='js/include.js') }}"></script>
+
+  <!-- For hidden eye password-->
+  <script>
+  const passwordInput = document.getElementById("password");
+  const togglePassword = document.getElementById("togglePassword");
+
+  togglePassword.addEventListener("click", function () {
+    const isPassword = passwordInput.getAttribute("type") === "password";
+    passwordInput.setAttribute("type", isPassword ? "text" : "password");
+    togglePassword.textContent = isPassword ? "🙈" : "👁";
+  });
+</script>
+
+
+<!-- for password check-->
+<script>
+const password = document.getElementById("password");
+
+const lengthRule = document.getElementById("length");
+const lowerRule = document.getElementById("lower");
+const upperRule = document.getElementById("upper");
+const specialRule = document.getElementById("special");
+
+password.addEventListener("input", function() {
+
+  const value = password.value;
+
+  if(value.length >= 8){
+    lengthRule.textContent = "✔ At least 8 characters";
+  } else {
+    lengthRule.textContent = "❌ At least 8 characters";
+  }
+
+  if(/[a-z]/.test(value)){
+    lowerRule.textContent = "✔ One lowercase letter";
+  } else {
+    lowerRule.textContent = "❌ One lowercase letter";
+  }
+
+  if(/[A-Z]/.test(value)){
+    upperRule.textContent = "✔ One uppercase letter";
+  } else {
+    upperRule.textContent = "❌ One uppercase letter";
+  }
+
+  if(/[\W_]/.test(value)){
+    specialRule.textContent = "✔ One special character";
+  } else {
+    specialRule.textContent = "❌ One special character";
+  }
+
+});
+</script>
+
+
+</body>
+</html>
