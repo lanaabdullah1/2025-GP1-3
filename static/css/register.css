@@ -75,17 +75,16 @@
 }
 
 
-/* dropdown text */
 .form-group select{
     color: white;
 }
 
-/* dropdown option text */
+
 .form-group select option{
     color: white;
 }
 
-/* group labels (Weekdays / Weekend) */
+
 .form-group select optgroup{
     color: white;
 }
@@ -114,7 +113,7 @@
 
 .password-wrapper input {
   width: 100%;
-  padding-right: 50px; /* space for eye button */
+  padding-right: 50px;
 }
 
 .toggle-password {
@@ -144,59 +143,43 @@
 
 .success-message {
     width: 100%;
-    margin: 0 auto 20px auto; /* keeps it aligned with the form */
-    text-align: center;       /* centers the text */
+    margin: 0 auto 20px auto; 
+    text-align: center;       
 }
 
 
 
-/* delleetteeeeee */
 
 
-.shift-selector{
-    width:100%;
-    max-width:26rem;
+
+
+.field-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 12px;
 }
 
-.shift-group{
-    margin-bottom:1.2rem;
-    margin-left: 1rem;
+.shift-days {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.shift-group-title{
-    font-size:1rem;
-    font-weight:600;
-    margin-bottom:0.5rem;
+.shift-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 400;
+  color: white;
+  margin: 0;
+  width: fit-content;
 }
 
-.shift-options{
-    display:flex;
-    gap:0.6rem;
-    flex-wrap:wrap;
+.shift-option input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
 }
-
-.shift-btn{
-    padding:0.6rem 1rem;
-    border-radius:0.6rem;
-    border:1px solid rgba(255,255,255,0.15);
-    background:#0f1d36;
-    color:white;
-    cursor:pointer;
-    transition:0.2s;
-}
-
-.shift-btn:hover{
-    background:#132247;
-}
-
-.shift-btn.active{
-    background:var(--primary);
-    border-color:var(--primary);
-}
-
-.shift-hint{
-    font-size:0.85rem;
-    color:#cfd9ff;
-}
-
-/*delleetteeee*/

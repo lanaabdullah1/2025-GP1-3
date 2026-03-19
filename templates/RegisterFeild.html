@@ -32,8 +32,7 @@
       {% endif %}
     {% endwith %}
 
-  <form class="register-form" method="POST" action="{{ url_for('register') }}">
-    <input type="hidden" name="role" value="{{ selected_role or 'security_operator' }}">
+  <form class="register-form" method="POST" action="{{ url_for('register_fields') }}">
         <div class="form-group">
           <label for="firstName">First Name</label>
           <input type="text" id="firstName" name="firstName" placeholder="Enter First Name" required>
@@ -48,50 +47,15 @@
 
 
 
-
-
-
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" placeholder="Enter email" required>
+        
+         <div class="form-group">
+          <label for="phoneNumber">Phone Number</label>
+          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="Enter Phone Number" required>
         </div>
 
 
-        <div class="form-group">
-          <label for="password">Password</label>
-
-           <div class="password-wrapper">
-              <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter password"
-                required
-                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$"
-              >
-
-            <button type="button" id="togglePassword" class="toggle-password">
-              👁
-            </button>
-          </div>
-
-                <ul class="password-rules">
-                    <li id="length">❌ At least 8 characters</li>
-                    <li id="lower">❌ One lowercase letter</li>
-                    <li id="upper">❌ One uppercase letter</li>
-                    <li id="special">❌ One special character</li>
-                </ul>
 
 
-          </div>
-
-
-
-        
-
-
-
-    
           
            <div class="form-group">
             <p class="field-title">Shift Days</p>
@@ -152,20 +116,11 @@
 
 
 
-
-
-
-
-
-
-
-
         <button type="submit" class="submit-btn">Add</button>
       </form>
     </div>
   </main>
 
- 
 
   <!-- FOOTER -->
   {% include 'footer.html' %}
@@ -173,58 +128,8 @@
   <!-- LOAD HEADER + FOOTER -->
   <script src="include.js"></script> <script src="{{ url_for('static', filename='js/include.js') }}"></script>
 
-  <!-- For hidden eye password-->
-  <script>
-  const passwordInput = document.getElementById("password");
-  const togglePassword = document.getElementById("togglePassword");
-
-  togglePassword.addEventListener("click", function () {
-    const isPassword = passwordInput.getAttribute("type") === "password";
-    passwordInput.setAttribute("type", isPassword ? "text" : "password");
-    togglePassword.textContent = isPassword ? "🙈" : "👁";
-  });
-</script>
 
 
-<!-- for password check-->
-<script>
-const password = document.getElementById("password");
-
-const lengthRule = document.getElementById("length");
-const lowerRule = document.getElementById("lower");
-const upperRule = document.getElementById("upper");
-const specialRule = document.getElementById("special");
-
-password.addEventListener("input", function() {
-
-  const value = password.value;
-
-  if(value.length >= 8){
-    lengthRule.textContent = "✔ At least 8 characters";
-  } else {
-    lengthRule.textContent = "❌ At least 8 characters";
-  }
-
-  if(/[a-z]/.test(value)){
-    lowerRule.textContent = "✔ One lowercase letter";
-  } else {
-    lowerRule.textContent = "❌ One lowercase letter";
-  }
-
-  if(/[A-Z]/.test(value)){
-    upperRule.textContent = "✔ One uppercase letter";
-  } else {
-    upperRule.textContent = "❌ One uppercase letter";
-  }
-
-  if(/[\W_]/.test(value)){
-    specialRule.textContent = "✔ One special character";
-  } else {
-    specialRule.textContent = "❌ One special character";
-  }
-
-});
-</script>
 
 
 </body>

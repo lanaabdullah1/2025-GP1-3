@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eyecept | Manage Users</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/manage-users.css') }}">
+</head>
+<body>
+
+  {% include 'header-main.html' %}
+
+  <main class="manage-users-page">
+    <div class="manage-users-container">
+      <h1 class="manage-title">Manage Users</h1>
+
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for message in messages %}
+              <p class="flash-message">{{ message }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- ADD USERS -->
+      <section class="manage-section">
+        <h2 class="section-title">Add Users</h2>
+
+        <form method="POST" action="{{ url_for('manage_users') }}" class="manage-form">
+          <p class="role-label">Choose Type:</p>
+
+          <div class="role-options">
+            <label class="role-option">
+              <input type="radio" name="role" value="field_officer">
+              <span>Field Security Officer</span>
+            </label>
+
+            <label class="role-option">
+              <input type="radio" name="role" value="admin">
+              <span>Admin</span>
+            </label>
+
+            <label class="role-option">
+              <input type="radio" name="role" value="security_operator">
+              <span>Security Operator</span>
+            </label>
+          </div>
+
+          <button type="submit" class="manage-btn add-btn">Add User</button>
+        </form>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- DELETE USERS -->
+      <section class="manage-section">
+        <h2 class="section-title">Delete Users</h2>
+
+        <div class="delete-users-box">
+          <p class="delete-text">
+            Open the user list, select one or more users, then confirm deletion.
+          </p>
+          <button type="button" class="manage-btn delete-btn" id="openDeleteModalBtn">
+            Delete Users
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- USER LIST MODAL -->
+  <div class="modal-overlay hidden" id="deleteModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Select Users to Delete</h3>
+        <button class="close-modal-btn" id="closeDeleteModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="usersList" class="users-list">
+          <p class="loading-text">Loading users...</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" id="cancelDeleteBtn">Cancel</button>
+        <button type="button" class="danger-btn" id="goConfirmDeleteBtn">Delete Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div class="modal-overlay hidden" id="confirmModal">
+    <div class="modal-box confirm-box">
+      <div class="modal-header">
+        <h3>Confirm Deletion</h3>
+        <button class="close-modal-btn" id="closeConfirmModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p id="confirmDeleteText">Are you sure you want to delete the selected users?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" id="cancelConfirmBtn">No</button>
+        <button type="button" class="danger-btn" id="confirmDeleteBtn">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  {% include 'footer.html' %}
+
+  <script>
+    const deleteModal = document.getElementById("deleteModal");
+    const confirmModal = document.getElementById("confirmModal");
+    const usersList = document.getElementById("usersList");
+    const confirmDeleteText = document.getElementById("confirmDeleteText");
+
+    const openDeleteModalBtn = document.getElementById("openDeleteModalBtn");
+    const closeDeleteModalBtn = document.getElementById("closeDeleteModalBtn");
+    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+    const goConfirmDeleteBtn = document.getElementById("goConfirmDeleteBtn");
+
+    const closeConfirmModalBtn = document.getElementById("closeConfirmModalBtn");
+    const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
+    let selectedUserIds = [];
+
+    function openModal(modal) {
+      modal.classList.remove("hidden");
+    }
+
+    function closeModal(modal) {
+      modal.classList.add("hidden");
+    }
+
+    async function loadUsers() {
+      usersList.innerHTML = '<p class="loading-text">Loading users...</p>';
+
+      try {
+        const response = await fetch("/api/users");
+        const users = await response.json();
+
+        if (!users.length) {
+          usersList.innerHTML = '<p class="empty-text">No users found.</p>';
+          return;
+        }
+
+        usersList.innerHTML = users.map(user => `
+          <label class="user-row">
+            <input type="checkbox" class="user-checkbox" value="${user.id}">
+            <div class="user-info">
+              <span class="user-name">${user.name}</span>
+              <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
+            </div>
+          </label>
+        `).join("");
+      } catch (error) {
+        usersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
+      }
+    }
+
+    function collectSelectedUsers() {
+      const checkedBoxes = document.querySelectorAll(".user-checkbox:checked");
+      selectedUserIds = Array.from(checkedBoxes).map(box => parseInt(box.value));
+      return selectedUserIds;
+    }
+
+    openDeleteModalBtn.addEventListener("click", async () => {
+      await loadUsers();
+      openModal(deleteModal);
+    });
+
+    closeDeleteModalBtn.addEventListener("click", () => closeModal(deleteModal));
+    cancelDeleteBtn.addEventListener("click", () => closeModal(deleteModal));
+
+    goConfirmDeleteBtn.addEventListener("click", () => {
+      const selected = collectSelectedUsers();
+
+      if (!selected.length) {
+        alert("Please select at least one user.");
+        return;
+      }
+
+      if (selected.length === 1) {
+        confirmDeleteText.textContent = "Are you sure you want to delete this user?";
+      } else {
+        confirmDeleteText.textContent = `Are you sure you want to delete ${selected.length} users?`;
+      }
+
+      openModal(confirmModal);
+    });
+
+    closeConfirmModalBtn.addEventListener("click", () => closeModal(confirmModal));
+    cancelConfirmBtn.addEventListener("click", () => closeModal(confirmModal));
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/api/delete-users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ user_ids: selectedUserIds })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          closeModal(confirmModal);
+          closeModal(deleteModal);
+          window.location.reload();
+        } else {
+          alert(result.message || "Deletion failed.");
+        }
+      } catch (error) {
+        alert("Something went wrong while deleting users.");
+      }
+    });
+
+    window.addEventListener("click", (e) => {
+      if (e.target === deleteModal) closeModal(deleteModal);
+      if (e.target === confirmModal) closeModal(confirmModal);
+    });
+
+
+    function formatRole(role) {
+        return role
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+
+
+
+  </script>
+</body>
+</html>
