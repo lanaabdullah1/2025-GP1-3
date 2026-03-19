@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eyecept | Update Shift</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/update-shift.css') }}">
+</head>
+<body>
+
+  {% include 'header-main.html' %}
+
+  <main class="update-shift-page">
+    <div class="update-shift-container">
+      <h1 class="update-title">Update Shift</h1>
+
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for message in messages %}
+              <p class="flash-message">{{ message }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="user-summary">
+        <h2>{{ user["first_name"] }} {{ user["last_name"] }}</h2>
+        <p>{{ formatted_role }}</p>
+      </div>
+
+      <form method="POST" class="update-form">
+        <div class="form-group">
+          <label>Select Shift Days</label>
+          <div class="days-grid">
+            {% for day in days_options %}
+              <label class="day-option">
+                <input
+                  type="checkbox"
+                  name="shift_days"
+                  value="{{ day }}"
+                  {% if day in selected_days %}checked{% endif %}
+                >
+                <span>{{ day }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="time-row">
+          <div class="form-group">
+            <label for="start_time">Start Time</label>
+            <input type="time" id="start_time" name="start_time" value="{{ user['start_time'] }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="end_time">End Time</label>
+            <input type="time" id="end_time" name="end_time" value="{{ user['end_time'] }}" required>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <a href="{{ url_for('manage_users') }}" class="cancel-link">Cancel</a>
+          <button type="submit" class="save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  {% include 'footer.html' %}
+</body>
+</html>

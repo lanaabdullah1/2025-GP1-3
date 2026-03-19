@@ -6,6 +6,17 @@ app = Flask(__name__)
 app.secret_key = "eyecept-secret-key"
 
 
+DAYS_OPTIONS = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+]
+
+
 def get_db_connection():
     conn = sqlite3.connect("users.db")
     conn.row_factory = sqlite3.Row
@@ -56,6 +67,70 @@ def manage_users():
         return redirect(url_for("manage_users"))
 
     return render_template("ManageUsers.html")
+
+
+
+
+def format_role(role):
+    return role.replace("_", " ").title()
+
+
+@app.route("/update-shift/<int:user_id>", methods=["GET", "POST"])
+def update_shift(user_id):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, first_name, last_name, shift_days, start_time, end_time, role
+            FROM users
+            WHERE id = ?
+        """, (user_id,))
+        user = cursor.fetchone()
+
+    if not user:
+        flash("User not found.")
+        return redirect(url_for("manage_users"))
+
+    if request.method == "POST":
+        shift_days = request.form.getlist("shift_days")
+        start_time = request.form.get("start_time", "").strip()
+        end_time = request.form.get("end_time", "").strip()
+
+        if not shift_days:
+            flash("Please select at least one shift day.")
+            return redirect(url_for("update_shift", user_id=user_id))
+
+        if not start_time or not end_time:
+            flash("Please select both start time and end time.")
+            return redirect(url_for("update_shift", user_id=user_id))
+
+        shift_days_text = ",".join(shift_days)
+
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE users
+                    SET shift_days = ?, start_time = ?, end_time = ?
+                    WHERE id = ?
+                """, (shift_days_text, start_time, end_time, user_id))
+                conn.commit()
+
+            flash("Shift updated successfully.")
+            return redirect(url_for("manage_users"))
+
+        except sqlite3.Error as e:
+            flash(f"Error updating shift: {e}")
+            return redirect(url_for("update_shift", user_id=user_id))
+
+    selected_days = user["shift_days"].split(",") if user["shift_days"] else []
+
+    return render_template(
+        "UpdateShift.html",
+        user=user,
+        selected_days=selected_days,
+        days_options=DAYS_OPTIONS,
+        formatted_role=format_role(user["role"])
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])

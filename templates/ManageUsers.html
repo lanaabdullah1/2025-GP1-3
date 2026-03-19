@@ -61,8 +61,8 @@
       <section class="manage-section">
         <h2 class="section-title">Delete Users</h2>
 
-        <div class="delete-users-box">
-          <p class="delete-text">
+        <div class="action-box">
+          <p class="action-text">
             Open the user list, select one or more users, then confirm deletion.
           </p>
           <button type="button" class="manage-btn delete-btn" id="openDeleteModalBtn">
@@ -70,10 +70,26 @@
           </button>
         </div>
       </section>
+
+      <div class="section-divider"></div>
+
+      <!-- UPDATE SHIFT -->
+      <section class="manage-section">
+        <h2 class="section-title">Update Shift</h2>
+
+        <div class="action-box">
+          <p class="action-text">
+            Open the user list, select one user, then continue to update their shift.
+          </p>
+          <button type="button" class="manage-btn update-btn" id="openUpdateShiftModalBtn">
+            Update Shift
+          </button>
+        </div>
+      </section>
     </div>
   </main>
 
-  <!-- USER LIST MODAL -->
+  <!-- DELETE USERS MODAL -->
   <div class="modal-overlay hidden" id="deleteModal">
     <div class="modal-box">
       <div class="modal-header">
@@ -82,7 +98,7 @@
       </div>
 
       <div class="modal-body">
-        <div id="usersList" class="users-list">
+        <div id="deleteUsersList" class="users-list">
           <p class="loading-text">Loading users...</p>
         </div>
       </div>
@@ -94,7 +110,7 @@
     </div>
   </div>
 
-  <!-- CONFIRMATION MODAL -->
+  <!-- CONFIRM DELETE MODAL -->
   <div class="modal-overlay hidden" id="confirmModal">
     <div class="modal-box confirm-box">
       <div class="modal-header">
@@ -113,12 +129,36 @@
     </div>
   </div>
 
+  <!-- UPDATE SHIFT MODAL -->
+  <div class="modal-overlay hidden" id="updateShiftModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Select User to Update Shift</h3>
+        <button class="close-modal-btn" id="closeUpdateShiftModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="updateShiftUsersList" class="users-list">
+          <p class="loading-text">Loading users...</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" id="cancelUpdateShiftBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="goToUpdateShiftBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
   {% include 'footer.html' %}
 
   <script>
     const deleteModal = document.getElementById("deleteModal");
     const confirmModal = document.getElementById("confirmModal");
-    const usersList = document.getElementById("usersList");
+    const updateShiftModal = document.getElementById("updateShiftModal");
+
+    const deleteUsersList = document.getElementById("deleteUsersList");
+    const updateShiftUsersList = document.getElementById("updateShiftUsersList");
     const confirmDeleteText = document.getElementById("confirmDeleteText");
 
     const openDeleteModalBtn = document.getElementById("openDeleteModalBtn");
@@ -130,7 +170,13 @@
     const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
     const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 
+    const openUpdateShiftModalBtn = document.getElementById("openUpdateShiftModalBtn");
+    const closeUpdateShiftModalBtn = document.getElementById("closeUpdateShiftModalBtn");
+    const cancelUpdateShiftBtn = document.getElementById("cancelUpdateShiftBtn");
+    const goToUpdateShiftBtn = document.getElementById("goToUpdateShiftBtn");
+
     let selectedUserIds = [];
+    let selectedShiftUserId = null;
 
     function openModal(modal) {
       modal.classList.remove("hidden");
@@ -140,21 +186,31 @@
       modal.classList.add("hidden");
     }
 
-    async function loadUsers() {
-      usersList.innerHTML = '<p class="loading-text">Loading users...</p>';
+    function formatRole(role) {
+      return role
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    async function fetchUsers() {
+      const response = await fetch("/api/users");
+      return await response.json();
+    }
+
+    async function loadDeleteUsers() {
+      deleteUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
 
       try {
-        const response = await fetch("/api/users");
-        const users = await response.json();
+        const users = await fetchUsers();
 
         if (!users.length) {
-          usersList.innerHTML = '<p class="empty-text">No users found.</p>';
+          deleteUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
           return;
         }
 
-        usersList.innerHTML = users.map(user => `
+        deleteUsersList.innerHTML = users.map(user => `
           <label class="user-row">
-            <input type="checkbox" class="user-checkbox" value="${user.id}">
+            <input type="checkbox" class="delete-user-checkbox" value="${user.id}">
             <div class="user-info">
               <span class="user-name">${user.name}</span>
               <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
@@ -162,18 +218,49 @@
           </label>
         `).join("");
       } catch (error) {
-        usersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
+        deleteUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
       }
     }
 
-    function collectSelectedUsers() {
-      const checkedBoxes = document.querySelectorAll(".user-checkbox:checked");
+    async function loadUpdateShiftUsers() {
+      updateShiftUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
+
+      try {
+        const users = await fetchUsers();
+
+        if (!users.length) {
+          updateShiftUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
+          return;
+        }
+
+        updateShiftUsersList.innerHTML = users.map(user => `
+          <label class="user-row">
+            <input type="radio" class="update-user-radio" name="shiftUser" value="${user.id}">
+            <div class="user-info">
+              <span class="user-name">${user.name}</span>
+              <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
+            </div>
+          </label>
+        `).join("");
+      } catch (error) {
+        updateShiftUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
+      }
+    }
+
+    function collectSelectedDeleteUsers() {
+      const checkedBoxes = document.querySelectorAll(".delete-user-checkbox:checked");
       selectedUserIds = Array.from(checkedBoxes).map(box => parseInt(box.value));
       return selectedUserIds;
     }
 
+    function collectSelectedShiftUser() {
+      const selectedRadio = document.querySelector(".update-user-radio:checked");
+      selectedShiftUserId = selectedRadio ? parseInt(selectedRadio.value) : null;
+      return selectedShiftUserId;
+    }
+
     openDeleteModalBtn.addEventListener("click", async () => {
-      await loadUsers();
+      await loadDeleteUsers();
       openModal(deleteModal);
     });
 
@@ -181,7 +268,7 @@
     cancelDeleteBtn.addEventListener("click", () => closeModal(deleteModal));
 
     goConfirmDeleteBtn.addEventListener("click", () => {
-      const selected = collectSelectedUsers();
+      const selected = collectSelectedDeleteUsers();
 
       if (!selected.length) {
         alert("Please select at least one user.");
@@ -224,21 +311,30 @@
       }
     });
 
+    openUpdateShiftModalBtn.addEventListener("click", async () => {
+      await loadUpdateShiftUsers();
+      openModal(updateShiftModal);
+    });
+
+    closeUpdateShiftModalBtn.addEventListener("click", () => closeModal(updateShiftModal));
+    cancelUpdateShiftBtn.addEventListener("click", () => closeModal(updateShiftModal));
+
+    goToUpdateShiftBtn.addEventListener("click", () => {
+      const userId = collectSelectedShiftUser();
+
+      if (!userId) {
+        alert("Please select one user.");
+        return;
+      }
+
+      window.location.href = `/update-shift/${userId}`;
+    });
+
     window.addEventListener("click", (e) => {
       if (e.target === deleteModal) closeModal(deleteModal);
       if (e.target === confirmModal) closeModal(confirmModal);
+      if (e.target === updateShiftModal) closeModal(updateShiftModal);
     });
-
-
-    function formatRole(role) {
-        return role
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, char => char.toUpperCase());
-    }
-
-
-
-
   </script>
 </body>
 </html>
