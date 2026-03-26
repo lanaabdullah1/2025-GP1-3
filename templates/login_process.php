@@ -1,22 +1,31 @@
 <?php
-require_once 'connection.php';
-session_start();
+session_start(); // بدء الجلسة
 
-$email = $_POST['email'];
-$password = $_POST['password'];
+// ======== اتصال SQLite ========
+$db = new SQLite3('database.db'); // ضع هنا اسم ملف قاعدة البيانات
 
-$stmt = $conn->prepare("SELECT userID, password FROM user WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
+// ======== استلام بيانات النموذج ========
+$email = $_POST['email'] ?? '';
+$password = $_POST['password'] ?? '';
 
+// ======== تحضير الاستعلام ========
+$stmt = $db->prepare('SELECT id, email, password FROM users WHERE email = :email');
+$stmt->bindValue(':email', $email, SQLITE3_TEXT);
+$result = $stmt->execute();
+$user = $result->fetchArray(SQLITE3_ASSOC);
+
+// ======== التحقق من بيانات تسجيل الدخول ========
 if (!$user || !password_verify($password, $user['password'])) {
-    header("Location: log.php?error=invalid");
+    // إعادة التوجيه مع رسالة خطأ
+    header('Location: login.php?error=invalid');
     exit;
 }
 
-$_SESSION['userID'] = $user['userID'];
-header("Location: dashboard.php");
+// ======== تسجيل الجلسة ========
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['email'] = $user['email'];
+
+// ======== إعادة التوجيه للصفحة المحمية ========
+header('Location: dashboard.php');
 exit;
 ?>
