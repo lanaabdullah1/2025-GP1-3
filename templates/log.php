@@ -29,6 +29,7 @@
     <form class="login-form" action="login_process.php" method="POST">
       <input type="email" name="email" placeholder="Email">
       <input type="password" name="password" placeholder="Password">
+	  <p class="forgot-password" id="forgotPassword">Forgot Password?</p>
       <button type="submit">Login</button>
     </form>
 
