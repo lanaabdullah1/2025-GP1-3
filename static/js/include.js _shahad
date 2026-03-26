@@ -1,0 +1,31 @@
+fetch("header.html")
+.then(res => res.text())
+.then(data => {
+  document.getElementById("header-placeholder").innerHTML = data;
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  const modal = document.getElementById("logoutModal");
+
+  if (logoutBtn && modal) {
+    logoutBtn.onclick = () => modal.style.display = "flex";
+  }
+});
+
+fetch("footer.html")
+.then(res => res.text())
+.then(data => {
+  document.getElementById("footer-placeholder").innerHTML = data;
+});
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const forgotPassword = document.getElementById('forgotPassword');
+
+    forgotPassword.addEventListener('click', () => {
+        let email = prompt("Please enter your email to reset your password:");
+        if (email) {
+            alert("Password reset instructions sent to: " + email);
+            // لاحقًا يمكن ربطها بعملية PHP حقيقية لإرسال رابط إعادة ضبط كلمة المرور
+        }
+    });
+});
+</script>
