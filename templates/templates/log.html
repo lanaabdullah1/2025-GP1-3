@@ -3,25 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - Eyecept</title>
-  <link rel="stylesheet" href="css/shared.css">
-  <link rel="stylesheet" href="css/log.css">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/log.css') }}">
 </head>
 
 <body>
+
 {% include 'header-main.html' %}
-<div id="header-placeholder"></div>
 
 <main class="login-main">
   <div class="login-box">
 
-    <img src="images/logo.png" class="login-logo" alt="Eyecept Logo">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" class="login-logo">
+
     <h2>Login</h2>
 
-    <!-- رسالة خطأ ثابتة (اختياري) -->
-    <!-- تقدر تحذفها أو تتحكم فيها بـ JS لاحقًا -->
-    <!-- <p style="color:red;">Wrong login</p> -->
-
-    <form class="login-form" action="login_process.php" method="POST">
+    <form class="login-form" action="/login" method="POST">
       <input type="email" name="email" placeholder="Email">
       <input type="password" name="password" placeholder="Password">
       <p class="forgot-password" id="forgotPassword">Forgot Password?</p>
@@ -31,9 +29,9 @@
   </div>
 </main>
 
-<div id="footer-placeholder"></div>
+{% include 'footer.html' %}
 
-<script src="js/include.js"></script>
- {% include 'footer.html' %}
+<script src="{{ url_for('static', filename='js/include.js') }}"></script>
+
 </body>
 </html>
