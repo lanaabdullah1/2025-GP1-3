@@ -32,11 +32,20 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(err => console.error("Footer load error:", err));
     }
 
+    // Forgot Password
+    const forgotPassword = document.getElementById("forgotPassword");
+    if (forgotPassword) {
+        forgotPassword.addEventListener("click", function () {
+            let email = prompt("Please enter your email to reset your password:");
+            if (email) {
+                alert("Password reset instructions sent to: " + email);
+            }
+        });
+    }
 });
 
 
 // ===== LOGOUT MODAL =====
-
 document.addEventListener("click", function(e){
 
     // open modal
