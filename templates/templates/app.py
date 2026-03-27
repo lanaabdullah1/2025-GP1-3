@@ -22,9 +22,9 @@ def login():
             session['user'] = email
             return redirect(url_for('dashboard'))
         else:
-            return render_template('login.html', error="Wrong login")
+            return render_template('log.html', error="Wrong login")
 
-    return render_template('login.html')
+    return render_template('log.html')
 
 
 # صفحة dashboard
