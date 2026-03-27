@@ -308,10 +308,32 @@ def delete_users():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html")
+    snapshots = [
+        {"id":1, "img":"...", "level":"Low", "date":"...", "time":"..."},
+        {"id":2, "img":"...", "level":"High", "date":"...", "time":"..."}
+    ]
+    return render_template("dashboard.html", snapshots=snapshots)
 
+
+@app.route("/details/<int:id>")
+def details(id):
+    snapshots = [
+        {"id":1, "img":"...", "level":"Low", "date":"...", "time":"..."},
+        {"id":2, "img":"...", "level":"High", "date":"...", "time":"..."}
+    ]
+
+    snapshot = next((s for s in snapshots if s["id"] == id), None)
+
+    return render_template("details.html", data=snapshot)
+
+
+
+@app.route('/account')
+def account():
+    return render_template('account.html')
 
 if __name__ == "__main__":
     init_db()

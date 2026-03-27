@@ -124,6 +124,10 @@
   background: #3f67ee;
 }
 
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 @media (max-width: 700px) {
   .update-shift-container {
     padding: 28px 22px;
@@ -133,4 +137,4 @@
   .time-row {
     grid-template-columns: 1fr;
   }
-}
+}  

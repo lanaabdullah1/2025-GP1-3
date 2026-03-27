@@ -256,6 +256,11 @@
   margin: 0;
 }
 
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 @media (max-width: 700px) {
   .manage-users-container {
     padding: 28px 22px;
