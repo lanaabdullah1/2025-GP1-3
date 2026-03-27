@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+
+<style>
+
+
+.container { padding: 20px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.cardDashboard {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.cardDashboard img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.info { padding: 10px; }
+
+
+</style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+</head>
+
+<body>
+
+{% include 'header-main.html' %}
+<main>
+
+<div class="container">
+  <div class="grid">
+
+    {% for s in snapshots %}
+    <div class="cardDashboard" onclick="goToDetails('{{ s.id }}')">
+      <img src="{{ s.img }}">
+      <div class="info">Level: {{ s.level }}</div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+</main>
+
+<script>
+function goToDetails(id){
+  window.location.href = "/details/" + id;
+}
+</script>
+
+{% include 'footer.html' %}
+
+</body>
+</html>
