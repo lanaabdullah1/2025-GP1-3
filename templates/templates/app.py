@@ -10,7 +10,7 @@ def home():
     return render_template('index.html')
 
 
-# صفحة تسجيل الدخول
+# صفحة تسجيل الدخول + معالجة تسجيل الدخول
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -27,24 +27,12 @@ def login():
     return render_template('login.html')
 
 
-# صفحة processing login إذا تحتاجينها
-@app.route('/processing-login')
-def processing_login():
-    return render_template('processing_login.html')
-
-
 # صفحة dashboard
 @app.route('/dashboard')
 def dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))
     return render_template('dashboard.html')
-
-
-# صفحة redirect login إذا تبينها
-@app.route('/redirect-login')
-def redirect_login():
-    return redirect(url_for('login'))
 
 
 # تسجيل الخروج
