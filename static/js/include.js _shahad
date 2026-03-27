@@ -1,31 +1,66 @@
-fetch("header.html")
-.then(res => res.text())
-.then(data => {
-  document.getElementById("header-placeholder").innerHTML = data;
+document.addEventListener("DOMContentLoaded", function () {
 
-  const logoutBtn = document.getElementById("logoutBtn");
-  const modal = document.getElementById("logoutModal");
+    const headerPlaceholder = document.getElementById("header-placeholder");
+    const footerPlaceholder = document.getElementById("footer-placeholder");
 
-  if (logoutBtn && modal) {
-    logoutBtn.onclick = () => modal.style.display = "flex";
-  }
-});
+    let headerFile = "header-main.html";
 
-fetch("footer.html")
-.then(res => res.text())
-.then(data => {
-  document.getElementById("footer-placeholder").innerHTML = data;
-});
-<script>
-document.addEventListener('DOMContentLoaded', () => {
+    const currentPage = window.location.pathname.toLowerCase();
+
+    if (currentPage.includes("login") || currentPage.includes("register")) {
+        headerFile = "header-auth.html";
+    }
+
+    // Load header
+    if (headerPlaceholder) {
+        fetch(headerFile)
+            .then(res => res.text())
+            .then(data => {
+                headerPlaceholder.innerHTML = data;
+            })
+            .catch(err => console.error("Header load error:", err));
+    }
+
+    // Load footer
+    if (footerPlaceholder) {
+        fetch("footer.html")
+            .then(res => res.text())
+            .then(data => {
+                footerPlaceholder.innerHTML = data;
+            })
+            .catch(err => console.error("Footer load error:", err));
+    }
+
+    // ===== Forgot Password =====
     const forgotPassword = document.getElementById('forgotPassword');
+    if (forgotPassword) {
+        forgotPassword.addEventListener('click', () => {
+            let email = prompt("Please enter your email to reset your password:");
+            if (email) {
+                alert("Password reset instructions sent to: " + email);
+            }
+        });
+    }
 
-    forgotPassword.addEventListener('click', () => {
-        let email = prompt("Please enter your email to reset your password:");
-        if (email) {
-            alert("Password reset instructions sent to: " + email);
-            // لاحقًا يمكن ربطها بعملية PHP حقيقية لإرسال رابط إعادة ضبط كلمة المرور
-        }
-    });
 });
-</script>
+
+
+// ===== LOGOUT MODAL =====
+document.addEventListener("click", function(e){
+
+    if(e.target && e.target.id === "logoutBtn"){
+        e.preventDefault();
+        const modal = document.getElementById("logoutModal");
+        if(modal) modal.style.display = "flex";
+    }
+
+    if(e.target && e.target.id === "cancelLogout"){
+        const modal = document.getElementById("logoutModal");
+        if(modal) modal.style.display = "none";
+    }
+
+    if(e.target && e.target.id === "confirmLogout"){
+        window.location.href = "login.html";
+    }
+
+});
