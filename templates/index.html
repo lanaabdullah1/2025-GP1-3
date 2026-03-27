@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Eyecept</title>
-<link rel="stylesheet" href="css/shared.css">
+  <meta charset="UTF-8">
+  <title>Eyecept</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
 </head>
 
 <body>
 
-<div id="header-placeholder"></div>
+{% include 'header-main.html' %}
 
 <main>
   <div class="card">
@@ -17,12 +17,11 @@
 
     <br>
 
-    <a href="log.php"><button>Login</button></a>
+    <a href="/login"><button>Login</button></a>
   </div>
 </main>
 
-<div id="footer-placeholder"></div>
+{% include 'footer.html' %}
 
-<script src="js/include.js"></script>
 </body>
 </html>
