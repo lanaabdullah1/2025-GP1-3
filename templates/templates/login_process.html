@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Processing Login</title>
+</head>
+
+<body>
+
+<h2>Processing Login...</h2>
+
+<script>
+// محاكاة تسجيل الدخول (تجربة فقط بدون قاعدة بيانات)
+
+const email = localStorage.getItem("email");
+const password = localStorage.getItem("password");
+
+// مثال بسيط (وهمي)
+if (email === "test@example.com" && password === "123456") {
+    alert("Login successful!");
+    window.location.href = "dashboard.html";
+} else {
+    alert("Wrong login");
+    window.location.href = "log.html";
+}
+</script>
+
+</body>
+</html>
