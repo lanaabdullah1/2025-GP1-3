@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Detect if page is login or register
     const currentPage = window.location.pathname.toLowerCase();
 
-    if (currentPage.includes("login") || currentPage.includes("register")) {
+    if (currentPage.includes("log") || currentPage.includes("register")) {
         headerFile = "header-auth.html";
     }
 
@@ -63,7 +63,7 @@ document.addEventListener("click", function(e){
 
     // confirm logout
     if(e.target && e.target.id === "confirmLogout"){
-        window.location.href = "login.html";
+        window.location.href = "log.html";
     }
 
 });
