@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account</title>
-  <link rel="stylesheet" href="shared.css">
-  <link rel="stylesheet" href="account.css" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='Account.css') }}">
 </head>
 
 <body>
@@ -14,15 +16,15 @@
   <header class="main-header">
     <div class="header-container">
 
-      <a href="dashboard.html" class="brand">
-        <img src="images/Logo.PNG" alt="Eyecept Logo" class="brand-logo">
+      <a href="/dashboard" class="brand">
+        <img src="{{ url_for('static', filename='images/Logo.PNG') }}" alt="Eyecept Logo" class="brand-logo">
       </a>
 
       <nav class="nav-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="alerts.html">Alerts</a>
-        <a href="reports.html">Reports</a>
-        <a href="settings.html">Settings</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/alerts">Alerts</a>
+        <a href="/reports">Reports</a>
+        <a href="/settings">Settings</a>
         <a href="#" class="logout-link" id="logoutBtn">Logout</a>
       </nav>
 
@@ -35,10 +37,11 @@
 
       <h1 class="account-title">Account</h1>
 
+     
       <div class="account-info">
-        <p><span class="label">Username</span><span id="username">-</span></p>
-        <p><span class="label">Email</span><span id="email">-</span></p>
-        <p><span class="label">Role</span><span id="role">-</span></p>
+        <p><span class="label">Username</span><span id="username">AdminUser</span></p>
+        <p><span class="label">Email</span><span id="email">admin@eyecept.com</span></p>
+        <p><span class="label">Role</span><span id="role">Admin</span></p>
       </div>
 
       <div class="reset-password">
@@ -49,13 +52,13 @@
 
       <div id="manageSection" class="manage-section">
         <h2 class="manage-title">Manage Users</h2>
-        <a href="manage-users.html" class="manage-link">Go to manage user</a>
+        <a href="/manage-users" class="manage-link">Go to manage user</a>
       </div>
 
     </section>
   </main>
 
-
+  <!-- Logout Modal -->
   <div class="modal" id="logoutModal">
     <div class="modal-box">
       <h3>Log Out</h3>
@@ -84,22 +87,9 @@
     </div>
   </footer>
 
+  <!-- JS -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      fetch("get_user.php")
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("username").textContent = data.username;
-          document.getElementById("email").textContent = data.email;
-          document.getElementById("role").textContent = data.role;
-
-          if (data.role !== "admin") {
-            document.getElementById("manageSection").style.display = "none";
-          }
-        })
-        .catch(error => {
-          console.error("Error:", error);
-        });
 
       const logoutBtn = document.getElementById("logoutBtn");
       const logoutModal = document.getElementById("logoutModal");
@@ -116,7 +106,7 @@
       });
 
       confirmLogout.addEventListener("click", function () {
-        window.location.href = "login.html";
+        window.location.href = "/login";
       });
 
       window.addEventListener("click", function (e) {
