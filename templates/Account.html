@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="account.css" />
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-container">
+
+      <a href="dashboard.html" class="brand">
+        <img src="images/Logo.PNG" alt="Eyecept Logo" class="brand-logo">
+      </a>
+
+      <nav class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="alerts.html">Alerts</a>
+        <a href="reports.html">Reports</a>
+        <a href="settings.html">Settings</a>
+        <a href="#" class="logout-link" id="logoutBtn">Logout</a>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="account-page">
+    <section class="account-card">
+
+      <h1 class="account-title">Account</h1>
+
+      <div class="account-info">
+        <p><span class="label">Username</span><span id="username">-</span></p>
+        <p><span class="label">Email</span><span id="email">-</span></p>
+        <p><span class="label">Role</span><span id="role">-</span></p>
+      </div>
+
+      <div class="reset-password">
+        <button type="button" class="reset-btn">Reset Password</button>
+      </div>
+
+      <hr class="divider" />
+
+      <div id="manageSection" class="manage-section">
+        <h2 class="manage-title">Manage Users</h2>
+        <a href="manage-users.html" class="manage-link">Go to manage user</a>
+      </div>
+
+    </section>
+  </main>
+
+
+  <div class="modal" id="logoutModal">
+    <div class="modal-box">
+      <h3>Log Out</h3>
+      <p>Are you sure you want to log out?</p>
+      <div class="modal-actions">
+        <button class="danger-btn" id="confirmLogout">Yes</button>
+        <button id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-vision">
+        <h4>Our Vision</h4>
+        <p>
+          Intelligent surveillance that detects suspicious behavior early and supports
+          security teams in taking faster and more effective action.
+        </p>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Eyecept. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch("get_user.php")
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("username").textContent = data.username;
+          document.getElementById("email").textContent = data.email;
+          document.getElementById("role").textContent = data.role;
+
+          if (data.role !== "admin") {
+            document.getElementById("manageSection").style.display = "none";
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+        });
+
+      const logoutBtn = document.getElementById("logoutBtn");
+      const logoutModal = document.getElementById("logoutModal");
+      const cancelLogout = document.getElementById("cancelLogout");
+      const confirmLogout = document.getElementById("confirmLogout");
+
+      logoutBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        logoutModal.style.display = "flex";
+      });
+
+      cancelLogout.addEventListener("click", function () {
+        logoutModal.style.display = "none";
+      });
+
+      confirmLogout.addEventListener("click", function () {
+        window.location.href = "login.html";
+      });
+
+      window.addEventListener("click", function (e) {
+        if (e.target === logoutModal) {
+          logoutModal.style.display = "none";
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
