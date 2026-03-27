@@ -333,7 +333,7 @@ def details(id):
 
 @app.route('/account')
 def account():
-    return render_template('account.html')
+    return render_template('Account.html')
 
 if __name__ == "__main__":
     init_db()
