@@ -37,7 +37,6 @@
 
       <h1 class="account-title">Account</h1>
 
-     
       <div class="account-info">
         <p><span class="label">Username</span><span id="username">AdminUser</span></p>
         <p><span class="label">Email</span><span id="email">admin@eyecept.com</span></p>
@@ -59,13 +58,13 @@
   </main>
 
   <!-- Logout Modal -->
-  <div class="modal" id="logoutModal">
+  <div class="modal" id="logoutModal" style="display: none;">
     <div class="modal-box">
       <h3>Log Out</h3>
       <p>Are you sure you want to log out?</p>
       <div class="modal-actions">
-        <button class="danger-btn" id="confirmLogout">Yes</button>
-        <button id="cancelLogout">Cancel</button>
+        <button type="button" class="danger-btn" id="confirmLogout">Yes</button>
+        <button type="button" id="cancelLogout">Cancel</button>
       </div>
     </div>
   </div>
@@ -90,30 +89,31 @@
   <!-- JS -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-
       const logoutBtn = document.getElementById("logoutBtn");
       const logoutModal = document.getElementById("logoutModal");
       const cancelLogout = document.getElementById("cancelLogout");
       const confirmLogout = document.getElementById("confirmLogout");
 
-      logoutBtn.addEventListener("click", function (e) {
-        e.preventDefault();
-        logoutModal.style.display = "flex";
-      });
+      if (logoutBtn && logoutModal && cancelLogout && confirmLogout) {
+        logoutBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          logoutModal.style.display = "flex";
+        });
 
-      cancelLogout.addEventListener("click", function () {
-        logoutModal.style.display = "none";
-      });
-
-      confirmLogout.addEventListener("click", function () {
-        window.location.href = "/login";
-      });
-
-      window.addEventListener("click", function (e) {
-        if (e.target === logoutModal) {
+        cancelLogout.addEventListener("click", function () {
           logoutModal.style.display = "none";
-        }
-      });
+        });
+
+        confirmLogout.addEventListener("click", function () {
+          window.location.href = "/logout";
+        });
+
+        window.addEventListener("click", function (e) {
+          if (e.target === logoutModal) {
+            logoutModal.style.display = "none";
+          }
+        });
+      }
     });
   </script>
 
