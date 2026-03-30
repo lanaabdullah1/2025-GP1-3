@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,68 +6,92 @@
 <title>Dashboard</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
   background: #0f1117;
   color: #e2e8f0;
   font-family: 'Segoe UI', sans-serif;
   min-height: 100vh;
 }
-.page-wrapper {
-  display: flex;
-  gap: 20px;
-  padding: 24px;
+
+main {
+  padding: 16px 20px;
 }
+
+.page-wrapper {
+  display: grid;
+  grid-template-columns: 70% 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ══════════════════════
+   LEFT — 12 CAMERAS
+══════════════════════ */
 .live-section {
-  flex: 0 0 520px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #6ee7f7;
+}
+
 .live-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
+
 .live-feed {
   background: #1a1d27;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid #2d3148;
   position: relative;
   aspect-ratio: 16/10;
+  width: 100%;
 }
+
 .live-badge {
   position: absolute;
   top: 6px; left: 6px;
   background: #ef4444;
   color: white;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   z-index: 2;
 }
 .live-badge::before {
   content: '';
-  width: 5px; height: 5px;
+  width: 4px; height: 4px;
   background: white;
   border-radius: 50%;
   animation: blink 1s infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
 .cam-label {
   position: absolute;
   bottom: 5px; left: 6px;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.65);
   color: #cbd5e1;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   padding: 2px 6px;
   border-radius: 4px;
   z-index: 2;
 }
+
 .video-placeholder {
   width: 100%;
   height: 100%;
@@ -76,82 +101,87 @@ body {
   align-items: center;
   justify-content: center;
   color: #4a5568;
-  font-size: 0.68rem;
-  gap: 4px;
+  font-size: 0.62rem;
+  gap: 5px;
 }
-.video-placeholder svg { opacity: 0.2; }
-.alert-table-wrapper {
-  background: #1a1d27;
-  border-radius: 12px;
-  border: 1px solid #2d3148;
-  overflow: hidden;
-}
-.section-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #6ee7f7;
-  padding: 12px 16px;
-  border-bottom: 1px solid #2d3148;
-}
-.alert-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-.alert-table th {
-  background: #141720;
-  color: #64748b;
-  font-weight: 600;
-  padding: 9px 14px;
-  text-align: left;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-.alert-table td {
-  padding: 9px 14px;
-  border-bottom: 1px solid #1e2235;
-  color: #cbd5e1;
-}
-.alert-table tr:last-child td { border-bottom: none; }
-.alert-table tr:hover td { background: #1e2235; cursor: pointer; }
-.level-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-.level-1 { background: #fef9c3; color: #92400e; }
-.level-2 { background: #fed7aa; color: #9a3412; }
-.level-3 { background: #fecaca; color: #991b1b; }
+.video-placeholder svg { opacity: 0.18; }
+
+/* ══════════════════════
+   RIGHT — SNAPSHOT TABLE
+══════════════════════ */
 .snapshots-section {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
+
 .snapshots-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.snapshots-header h2 { font-size: 1rem; font-weight: 600; }
-.snapshots-header span { font-size: 0.78rem; color: #64748b; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+.snapshots-header .count {
+  font-size: 0.72rem;
+  color: #64748b;
 }
-.cardDashboard {
+
+.table-wrapper {
   background: #1a1d27;
   border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
   border: 1px solid #2d3148;
-  transition: transform 0.2s, border-color 0.2s;
+  overflow: hidden;
 }
-.cardDashboard:hover { transform: translateY(-3px); border-color: #6ee7f7; }
-.cardDashboard img { width: 100%; height: 130px; object-fit: cover; background: #0d1117; }
-.info { padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
-.info-meta { font-size: 0.7rem; color: #64748b; }
+
+.snap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.snap-table th {
+  background: #141720;
+  color: #64748b;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #2d3148;
+}
+
+.snap-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e2235;
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+.snap-table tr:last-child td { border-bottom: none; }
+
+.snap-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.snap-table tbody tr:hover td { background: #1e2235; }
+
+.level-badge {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.level-1 { background: #fef9c3; color: #92400e; }
+.level-2 { background: #fed7aa; color: #9a3412; }
+.level-3 { background: #fecaca; color: #991b1b; }
+
+.arrow-hint {
+  color: #4a5568;
+  font-size: 1rem;
+  text-align: right;
+}
 </style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
 </head>
@@ -162,15 +192,15 @@ body {
 <main>
 <div class="page-wrapper">
 
-  <!-- LEFT: 6 Live Feeds + Table -->
+  <!-- ═══ LEFT: 12 CAMERAS ═══ -->
   <div class="live-section">
-
+    <div class="section-label">Live Cameras</div>
     <div class="live-grid">
 
-      <!-- Cam 1 -->
+      {% for i in range(1, 13) %}
       <div class="live-feed">
         <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 1</div>
+        <div class="cam-label">Cam {{ i }}</div>
         <div class="video-placeholder">
           <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
@@ -178,78 +208,25 @@ body {
           <span>No Signal</span>
         </div>
       </div>
-
-      <!-- Cam 2 -->
-      <div class="live-feed">
-        <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 2</div>
-        <div class="video-placeholder">
-          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-          </svg>
-          <span>No Signal</span>
-        </div>
-      </div>
-
-      <!-- Cam 3 -->
-      <div class="live-feed">
-        <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 3</div>
-        <div class="video-placeholder">
-          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-          </svg>
-          <span>No Signal</span>
-        </div>
-      </div>
-
-      <!-- Cam 4 -->
-      <div class="live-feed">
-        <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 4</div>
-        <div class="video-placeholder">
-          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-          </svg>
-          <span>No Signal</span>
-        </div>
-      </div>
-
-      <!-- Cam 5 -->
-      <div class="live-feed">
-        <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 5</div>
-        <div class="video-placeholder">
-          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-          </svg>
-          <span>No Signal</span>
-        </div>
-      </div>
-
-      <!-- Cam 6 -->
-      <div class="live-feed">
-        <div class="live-badge">LIVE</div>
-        <div class="cam-label">Cam 6</div>
-        <div class="video-placeholder">
-          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M15 10l4.553-2.552A1 1 0 0121 8.382v7.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-          </svg>
-          <span>No Signal</span>
-        </div>
-      </div>
+      {% endfor %}
 
     </div>
+  </div>
 
-    <!-- Alert Table -->
-    <div class="alert-table-wrapper">
-      <div class="section-title">Recent Alerts</div>
-      <table class="alert-table">
+  <!-- ═══ RIGHT: SNAPSHOTS TABLE ═══ -->
+  <div class="snapshots-section">
+    <div class="snapshots-header">
+      <div class="section-label">Snapshots</div>
+      <span class="count">{{ snapshots|length }} events</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="snap-table">
         <thead>
           <tr>
             <th>#</th>
-            <th>Threat Level</th>
-            <th>Time</th>
+            <th>Level</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -257,31 +234,11 @@ body {
           <tr onclick="goToDetails('{{ s.id }}')">
             <td>{{ loop.index }}</td>
             <td><span class="level-badge level-{{ s.level }}">Level {{ s.level }}</span></td>
-            <td>{{ s.time if s.time else '—' }}</td>
+            <td class="arrow-hint">›</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-    </div>
-
-  </div>
-
-  <!-- RIGHT: Snapshots -->
-  <div class="snapshots-section">
-    <div class="snapshots-header">
-      <h2>Snapshots</h2>
-      <span>{{ snapshots|length }} events</span>
-    </div>
-    <div class="grid">
-      {% for s in snapshots %}
-      <div class="cardDashboard" onclick="goToDetails('{{ s.id }}')">
-        <img src="{{ s.img }}" alt="Snapshot {{ s.id }}">
-        <div class="info">
-          <span class="level-badge level-{{ s.level }}">Level {{ s.level }}</span>
-          <span class="info-meta">{{ s.date if s.date else '' }}</span>
-        </div>
-      </div>
-      {% endfor %}
     </div>
   </div>
 
@@ -289,7 +246,7 @@ body {
 </main>
 
 <script>
-function goToDetails(id){
+function goToDetails(id) {
   window.location.href = "/details/" + id;
 }
 </script>
@@ -297,4 +254,4 @@ function goToDetails(id){
 {% include 'footer.html' %}
 
 </body>
-</html>s
+</html>
