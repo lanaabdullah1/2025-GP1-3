@@ -11,115 +11,262 @@ body {
 
 /* MAIN LOGIN SECTION */
 .login-main {
-  flex: 1;
+  padding: 50px 20px 80px;
+  min-height: calc(100vh - 160px);
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
+  align-items: flex-start;
+  flex: 1;
 }
 
 /* LOGIN BOX */
 .login-box {
-  background: rgba(21, 24, 32, 0.95);
-  border: 1px solid rgba(110, 168, 255, 0.3);
-  border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  max-width: 420px;
+  width: min(500px, 92%);
+  background: rgba(28, 44, 82, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 40px 42px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
   text-align: center;
-  padding: 2rem;
-}
-
-/* LOGO */
-.login-logo {
-  width: 90px;
-  height: auto;
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* HEADING */
 .login-box h2 {
-  font-size: 1.6rem;
-  margin-bottom: 1.5rem;
-  color: #6ea8ff; /* Eyecept Brand Color */
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* ERROR / ALERT MESSAGE */
+.login-box .flash-message {
+  margin-bottom: 18px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* FORM */
 .login-form {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 14px;
 }
 
 .login-form input {
-  padding: 0.9rem;
-  border-radius: 10px;
-  border: none;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   outline: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .login-form input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: #c8d7ff;
 }
+
 .forgot-password {
-    color: blue;
-    cursor: pointer;
-    font-size: 14px;
-    margin-top: 5px;
-    text-decoration: underline;
+  color: #dbe7ff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: left;
+  width: 100%;
 }
 
 /* LOGIN BUTTON */
 .login-form button {
-  padding: 0.9rem;
-  border-radius: 10px;
   border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
   cursor: pointer;
-  background: linear-gradient(135deg, #2d4a8e 0%, #1e3a5f 100%);
+  background: #4b74ff;
   color: white;
-  font-size: 1.1rem;
-  font-weight: 600;
-  transition: 0.3s;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: 0.2s ease;
   width: 100%;
 }
 
 .login-form button:hover {
-  transform: scale(1.05);
-  background: linear-gradient(135deg, #3c6ac2 0%, #264b78 100%);
+  background: #3f67ee;
 }
 
-/* SIGNUP LINK */
-.signup-link {
-  margin-top: 1.5rem;
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.8);
+/* ================= MODAL (POPUP) ================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 24, 0.74);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
 
-.signup-link a {
-  color: #6ea8ff; /* Eyecept Brand Color */
-  text-decoration: none;
-  font-weight: 500;
+.hidden {
+  display: none;
 }
 
-.signup-link a:hover {
-  text-decoration: underline;
+.modal-box {
+  width: min(460px, 92%);
+  background: #16274f;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 22px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.modal-header h3 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.8rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 18px 22px;
+}
+
+/* RESET PASSWORD FORM */
+.reset-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reset-password-form input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.reset-password-form input::placeholder {
+  color: #c8d7ff;
+}
+
+/* Rules list */
+.password-rules {
+  list-style: none;
+  padding: 0;
+  margin: -4px 0 0 0;
+  text-align: left;
+}
+
+.password-rules li {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 2px 0;
+}
+
+/* Confirm password status */
+.confirm-status {
+  margin: -4px 0 0 0;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+/* Valid / Invalid */
+.valid {
+  color: #2ecc71;
+}
+
+.invalid {
+  color: #ff5f5f;
+}
+
+/* Red error box under modal */
+.reset-error-message {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 95, 95, 0.12);
+  border: 1px solid rgba(255, 95, 95, 0.35);
+  color: #ff5f5f;
+  font-size: 0.92rem;
+  text-align: left;
+}
+
+/* FOOTER */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.secondary-btn,
+.primary-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 18px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.primary-btn {
+  background: #4b74ff;
+  color: #ffffff;
+}
+
+.primary-btn:hover {
+  background: #3f67ee;
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 700px) {
   .login-box {
-    padding: 1.5rem;
+    padding: 28px 22px;
   }
 
   .login-box h2 {
-    font-size: 1.3rem;
+    font-size: 1.7rem;
   }
 
   .login-form input,
-  .login-form button {
+  .login-form button,
+  .reset-password-form input {
     font-size: 0.95rem;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
   }
 }
