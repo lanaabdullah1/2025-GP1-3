@@ -5,59 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='shared.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='Account.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
 </head>
 
 <body>
 
-  <!-- Header -->
   <header class="main-header">
     <div class="header-container">
-
-      <a href="/dashboard" class="brand">
+      <a href="{{ url_for('dashboard') }}" class="brand">
         <img src="{{ url_for('static', filename='images/Logo.PNG') }}" alt="Eyecept Logo" class="brand-logo">
       </a>
 
       <nav class="nav-links">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/alerts">Alerts</a>
-        <a href="/reports">Reports</a>
-        <a href="/settings">Settings</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('account') }}">Account</a>
         <a href="#" class="logout-link" id="logoutBtn">Logout</a>
       </nav>
-
     </div>
   </header>
 
-  <!-- Main -->
   <main class="account-page">
     <section class="account-card">
 
       <h1 class="account-title">Account</h1>
 
       <div class="account-info">
-        <p><span class="label">Username</span><span id="username">AdminUser</span></p>
-        <p><span class="label">Email</span><span id="email">admin@eyecept.com</span></p>
-        <p><span class="label">Role</span><span id="role">Admin</span></p>
+        <p><span class="label">Username</span><span id="username">{{ user.first_name }} {{ user.last_name }}</span></p>
+        <p><span class="label">Email</span><span id="email">{{ user.email if user.email else '-' }}</span></p>
+        <p><span class="label">Role</span><span id="role">{{ formatted_role }}</span></p>
       </div>
 
       <div class="reset-password">
-        <button type="button" class="reset-btn">Reset Password</button>
+        <button type="button" class="reset-btn" id="openResetModalBtn">Reset Password</button>
       </div>
 
       <hr class="divider" />
 
+      {% if user.role == 'admin' %}
       <div id="manageSection" class="manage-section">
         <h2 class="manage-title">Manage Users</h2>
-        <a href="/manage-users" class="manage-link">Go to manage user</a>
+        <a href="/manage-users" class="manage-link">Go to manage users page</a>
       </div>
+      {% endif %}
 
     </section>
   </main>
 
-  <!-- Logout Modal -->
+  <!-- RESET PASSWORD MODAL -->
+  <div class="modal-overlay hidden" id="resetPasswordModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Reset Password</h3>
+        <button type="button" class="close-modal-btn" id="closeResetModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p>Please enter your email to reset your password.</p>
+        <input
+          type="email"
+          id="resetEmailInput"
+          class="reset-input"
+          placeholder="Please enter your email to reset your password"
+        >
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" id="cancelResetBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="confirmResetBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGOUT MODAL -->
   <div class="modal" id="logoutModal" style="display: none;">
     <div class="modal-box">
       <h3>Log Out</h3>
@@ -69,7 +89,6 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <footer class="site-footer">
     <div class="footer-container">
       <div class="footer-vision">
@@ -86,13 +105,19 @@
     </div>
   </footer>
 
-  <!-- JS -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const logoutBtn = document.getElementById("logoutBtn");
       const logoutModal = document.getElementById("logoutModal");
       const cancelLogout = document.getElementById("cancelLogout");
       const confirmLogout = document.getElementById("confirmLogout");
+
+      const openResetModalBtn = document.getElementById("openResetModalBtn");
+      const resetPasswordModal = document.getElementById("resetPasswordModal");
+      const closeResetModalBtn = document.getElementById("closeResetModalBtn");
+      const cancelResetBtn = document.getElementById("cancelResetBtn");
+      const confirmResetBtn = document.getElementById("confirmResetBtn");
+      const resetEmailInput = document.getElementById("resetEmailInput");
 
       if (logoutBtn && logoutModal && cancelLogout && confirmLogout) {
         logoutBtn.addEventListener("click", function (e) {
@@ -107,13 +132,49 @@
         confirmLogout.addEventListener("click", function () {
           window.location.href = "/logout";
         });
+      }
 
-        window.addEventListener("click", function (e) {
-          if (e.target === logoutModal) {
-            logoutModal.style.display = "none";
-          }
+      if (openResetModalBtn && resetPasswordModal) {
+        openResetModalBtn.addEventListener("click", function () {
+          resetPasswordModal.classList.remove("hidden");
         });
       }
+
+      if (closeResetModalBtn && resetPasswordModal) {
+        closeResetModalBtn.addEventListener("click", function () {
+          resetPasswordModal.classList.add("hidden");
+        });
+      }
+
+      if (cancelResetBtn && resetPasswordModal) {
+        cancelResetBtn.addEventListener("click", function () {
+          resetPasswordModal.classList.add("hidden");
+        });
+      }
+
+      if (confirmResetBtn && resetEmailInput) {
+        confirmResetBtn.addEventListener("click", function () {
+          const email = resetEmailInput.value.trim();
+
+          if (!email) {
+            alert("Please enter your email.");
+            return;
+          }
+
+          alert("Password reset instructions sent to: " + email);
+          resetPasswordModal.classList.add("hidden");
+        });
+      }
+
+      window.addEventListener("click", function (e) {
+        if (e.target === logoutModal) {
+          logoutModal.style.display = "none";
+        }
+
+        if (e.target === resetPasswordModal) {
+          resetPasswordModal.classList.add("hidden");
+        }
+      });
     });
   </script>
 
