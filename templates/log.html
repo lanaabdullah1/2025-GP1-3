@@ -15,6 +15,9 @@
 <main class="login-main">
   <div class="login-box">
 
+    <!-- زر الرجوع -->
+    <a href="{{ url_for('home') }}" class="login-close-btn" aria-label="Back to home">&times;</a>
+
     <h2>Login</h2>
 
     {% if error %}
@@ -54,13 +57,7 @@
       <form class="reset-password-form" action="{{ url_for('reset_password') }}" method="POST" id="resetPasswordForm">
         <input type="email" name="email" placeholder="Enter your email" required>
 
-        <input
-          type="password"
-          name="new_password"
-          id="newPassword"
-          placeholder="New password"
-          required
-        >
+        <input type="password" name="new_password" id="newPassword" placeholder="New password" required>
 
         <ul class="password-rules" id="passwordRules">
           <li id="rule-length" class="invalid">✘ At least 8 characters</li>
@@ -70,13 +67,7 @@
           <li id="rule-special" class="invalid">✘ At least one special character</li>
         </ul>
 
-        <input
-          type="password"
-          name="confirm_password"
-          id="confirmPassword"
-          placeholder="Confirm password"
-          required
-        >
+        <input type="password" name="confirm_password" id="confirmPassword" placeholder="Confirm password" required>
 
         <p id="confirmPasswordStatus" class="confirm-status invalid">✘ Passwords do not match</p>
 
@@ -98,6 +89,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
   const modal = document.getElementById("resetPasswordModal");
   const openBtn = document.getElementById("forgotPassword");
   const closeBtn = document.getElementById("closeResetModalBtn");
@@ -125,16 +117,10 @@ document.addEventListener("DOMContentLoaded", function () {
     errorBox.classList.add("hidden");
   }
 
-  function setRuleState(element, isValid, validText, invalidText) {
-    if (isValid) {
-      element.classList.remove("invalid");
-      element.classList.add("valid");
-      element.textContent = "✔ " + validText;
-    } else {
-      element.classList.remove("valid");
-      element.classList.add("invalid");
-      element.textContent = "✘ " + invalidText;
-    }
+  function setRuleState(element, isValid, text) {
+    element.classList.toggle("valid", isValid);
+    element.classList.toggle("invalid", !isValid);
+    element.textContent = (isValid ? "✔ " : "✘ ") + text;
   }
 
   function validatePasswordRules(password) {
@@ -146,106 +132,52 @@ document.addEventListener("DOMContentLoaded", function () {
       special: /[^A-Za-z\d]/.test(password)
     };
 
-    setRuleState(ruleLength, checks.length, "At least 8 characters", "At least 8 characters");
-    setRuleState(ruleUpper, checks.upper, "At least one uppercase letter", "At least one uppercase letter");
-    setRuleState(ruleLower, checks.lower, "At least one lowercase letter", "At least one lowercase letter");
-    setRuleState(ruleNumber, checks.number, "At least one number", "At least one number");
-    setRuleState(ruleSpecial, checks.special, "At least one special character", "At least one special character");
+    setRuleState(ruleLength, checks.length, "At least 8 characters");
+    setRuleState(ruleUpper, checks.upper, "At least one uppercase letter");
+    setRuleState(ruleLower, checks.lower, "At least one lowercase letter");
+    setRuleState(ruleNumber, checks.number, "At least one number");
+    setRuleState(ruleSpecial, checks.special, "At least one special character");
 
-    return checks.length && checks.upper && checks.lower && checks.number && checks.special;
+    return Object.values(checks).every(Boolean);
   }
 
   function validateConfirmPassword() {
-    const newPass = newPassword.value;
-    const confirmPass = confirmPassword.value;
-
-    if (!confirmPass) {
-      confirmStatus.classList.remove("valid");
-      confirmStatus.classList.add("invalid");
-      confirmStatus.textContent = "✘ Passwords do not match";
-      return false;
-    }
-
-    if (newPass === confirmPass) {
-      confirmStatus.classList.remove("invalid");
-      confirmStatus.classList.add("valid");
-      confirmStatus.textContent = "✔ Passwords match";
-      return true;
-    } else {
-      confirmStatus.classList.remove("valid");
-      confirmStatus.classList.add("invalid");
-      confirmStatus.textContent = "✘ Passwords do not match";
-      return false;
-    }
+    const match = newPassword.value === confirmPassword.value;
+    confirmStatus.textContent = match ? "✔ Passwords match" : "✘ Passwords do not match";
+    confirmStatus.className = match ? "confirm-status valid" : "confirm-status invalid";
+    return match;
   }
 
-  function resetValidationUI() {
-    hideError();
-    validatePasswordRules("");
-    confirmStatus.classList.remove("valid");
-    confirmStatus.classList.add("invalid");
-    confirmStatus.textContent = "✘ Passwords do not match";
-  }
+  if (openBtn) openBtn.onclick = () => {
+    modal.classList.remove("hidden");
+    resetForm.reset();
+  };
 
-  if (openBtn && modal) {
-    openBtn.addEventListener("click", function () {
-      modal.classList.remove("hidden");
-      resetForm.reset();
-      resetValidationUI();
-    });
-  }
+  if (closeBtn) closeBtn.onclick = () => modal.classList.add("hidden");
+  if (cancelBtn) cancelBtn.onclick = () => modal.classList.add("hidden");
 
-  if (closeBtn && modal) {
-    closeBtn.addEventListener("click", function () {
-      modal.classList.add("hidden");
-      hideError();
-    });
-  }
-
-  if (cancelBtn && modal) {
-    cancelBtn.addEventListener("click", function () {
-      modal.classList.add("hidden");
-      hideError();
-    });
-  }
-
-  newPassword.addEventListener("input", function () {
+  newPassword.oninput = () => {
     validatePasswordRules(newPassword.value);
     validateConfirmPassword();
     hideError();
-  });
+  };
 
-  confirmPassword.addEventListener("input", function () {
+  confirmPassword.oninput = () => {
     validateConfirmPassword();
     hideError();
-  });
+  };
 
-  if (resetForm) {
-    resetForm.addEventListener("submit", function (e) {
-      hideError();
-
-      const isPasswordValid = validatePasswordRules(newPassword.value);
-      const isConfirmValid = validateConfirmPassword();
-
-      if (!isPasswordValid) {
-        e.preventDefault();
-        showError("Password does not meet the required conditions.");
-        return;
-      }
-
-      if (!isConfirmValid) {
-        e.preventDefault();
-        showError("Confirm password must match the new password.");
-      }
-    });
-  }
-
-  window.addEventListener("click", function (e) {
-    if (e.target === modal) {
-      modal.classList.add("hidden");
-      hideError();
+  resetForm.onsubmit = function (e) {
+    if (!validatePasswordRules(newPassword.value) || !validateConfirmPassword()) {
+      e.preventDefault();
+      showError("Please fix the password requirements.");
     }
-  });
+  };
+
+  window.onclick = function (e) {
+    if (e.target === modal) modal.classList.add("hidden");
+  };
+
 });
 </script>
 
