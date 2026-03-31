@@ -11,7 +11,24 @@
 </head>
 <body>
 
-  {% include 'header-main.html' %}
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-container">
+
+      <a href="/dashboard" class="brand">
+        <img src="{{ url_for('static', filename='images/Logo.PNG') }}" alt="Eyecept Logo" class="brand-logo">
+      </a>
+
+      <nav class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/alerts">Alerts</a>
+        <a href="/reports">Reports</a>
+        <a href="/settings">Settings</a>
+        <a href="#" class="logout-link" id="logoutBtn">Logout</a>
+      </nav>
+
+    </div>
+  </header>
 
   <main class="manage-users-page">
     <div class="manage-users-container">
@@ -150,209 +167,254 @@
     </div>
   </div>
 
+  <!-- LOGOUT MODAL -->
+  <div class="modal" id="logoutModal" style="display: none;">
+    <div class="modal-box">
+      <h3>Log Out</h3>
+      <p>Are you sure you want to log out?</p>
+      <div class="modal-actions">
+        <button type="button" class="danger-btn" id="confirmLogout">Yes</button>
+        <button type="button" id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   {% include 'footer.html' %}
 
   <script>
-    const deleteModal = document.getElementById("deleteModal");
-    const confirmModal = document.getElementById("confirmModal");
-    const updateShiftModal = document.getElementById("updateShiftModal");
+    document.addEventListener("DOMContentLoaded", function () {
+      const deleteModal = document.getElementById("deleteModal");
+      const confirmModal = document.getElementById("confirmModal");
+      const updateShiftModal = document.getElementById("updateShiftModal");
 
-    const deleteUsersList = document.getElementById("deleteUsersList");
-    const updateShiftUsersList = document.getElementById("updateShiftUsersList");
-    const confirmDeleteText = document.getElementById("confirmDeleteText");
+      const deleteUsersList = document.getElementById("deleteUsersList");
+      const updateShiftUsersList = document.getElementById("updateShiftUsersList");
+      const confirmDeleteText = document.getElementById("confirmDeleteText");
 
-    const openDeleteModalBtn = document.getElementById("openDeleteModalBtn");
-    const closeDeleteModalBtn = document.getElementById("closeDeleteModalBtn");
-    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-    const goConfirmDeleteBtn = document.getElementById("goConfirmDeleteBtn");
+      const openDeleteModalBtn = document.getElementById("openDeleteModalBtn");
+      const closeDeleteModalBtn = document.getElementById("closeDeleteModalBtn");
+      const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+      const goConfirmDeleteBtn = document.getElementById("goConfirmDeleteBtn");
 
-    const closeConfirmModalBtn = document.getElementById("closeConfirmModalBtn");
-    const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
-    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+      const closeConfirmModalBtn = document.getElementById("closeConfirmModalBtn");
+      const cancelConfirmBtn = document.getElementById("cancelConfirmBtn");
+      const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 
-    const openUpdateShiftModalBtn = document.getElementById("openUpdateShiftModalBtn");
-    const closeUpdateShiftModalBtn = document.getElementById("closeUpdateShiftModalBtn");
-    const cancelUpdateShiftBtn = document.getElementById("cancelUpdateShiftBtn");
-    const goToUpdateShiftBtn = document.getElementById("goToUpdateShiftBtn");
+      const openUpdateShiftModalBtn = document.getElementById("openUpdateShiftModalBtn");
+      const closeUpdateShiftModalBtn = document.getElementById("closeUpdateShiftModalBtn");
+      const cancelUpdateShiftBtn = document.getElementById("cancelUpdateShiftBtn");
+      const goToUpdateShiftBtn = document.getElementById("goToUpdateShiftBtn");
 
-    let selectedUserIds = [];
-    let selectedShiftUserId = null;
+      const logoutBtn = document.getElementById("logoutBtn");
+      const logoutModal = document.getElementById("logoutModal");
+      const cancelLogout = document.getElementById("cancelLogout");
+      const confirmLogout = document.getElementById("confirmLogout");
 
-    function openModal(modal) {
-      modal.classList.remove("hidden");
-    }
+      let selectedUserIds = [];
+      let selectedShiftUserId = null;
 
-    function closeModal(modal) {
-      modal.classList.add("hidden");
-    }
+      function openModal(modal) {
+        modal.classList.remove("hidden");
+      }
 
-    function formatRole(role) {
-      return role
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, char => char.toUpperCase());
-    }
+      function closeModal(modal) {
+        modal.classList.add("hidden");
+      }
 
-    async function fetchUsers() {
-      const response = await fetch("/api/users");
-      return await response.json();
-    }
+      function formatRole(role) {
+        return role
+          .replaceAll("_", " ")
+          .replace(/\b\w/g, char => char.toUpperCase());
+      }
 
-    async function loadDeleteUsers() {
-      deleteUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
+      async function fetchUsers() {
+        const response = await fetch("/api/users");
+        return await response.json();
+      }
 
-      try {
-        const users = await fetchUsers();
+      async function loadDeleteUsers() {
+        deleteUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
 
-        if (!users.length) {
-          deleteUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
-          return;
+        try {
+          const users = await fetchUsers();
+
+          if (!users.length) {
+            deleteUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
+            return;
+          }
+
+          deleteUsersList.innerHTML = users.map(user => `
+            <label class="user-row">
+              <input type="checkbox" class="delete-user-checkbox" value="${user.id}">
+              <div class="user-info">
+                <span class="user-name">${user.name}</span>
+                <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
+              </div>
+            </label>
+          `).join("");
+        } catch (error) {
+          deleteUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
         }
-
-        deleteUsersList.innerHTML = users.map(user => `
-          <label class="user-row">
-            <input type="checkbox" class="delete-user-checkbox" value="${user.id}">
-            <div class="user-info">
-              <span class="user-name">${user.name}</span>
-              <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
-            </div>
-          </label>
-        `).join("");
-      } catch (error) {
-        deleteUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
       }
-    }
 
-    async function loadUpdateShiftUsers() {
-      updateShiftUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
+      async function loadUpdateShiftUsers() {
+        updateShiftUsersList.innerHTML = '<p class="loading-text">Loading users...</p>';
 
-      try {
-        const users = await fetchUsers();
+        try {
+          const users = await fetchUsers();
 
-        if (!users.length) {
-          updateShiftUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
-          return;
+          if (!users.length) {
+            updateShiftUsersList.innerHTML = '<p class="empty-text">No users found.</p>';
+            return;
+          }
+
+          updateShiftUsersList.innerHTML = users.map(user => `
+            <label class="user-row">
+              <input type="radio" class="update-user-radio" name="shiftUser" value="${user.id}">
+              <div class="user-info">
+                <span class="user-name">${user.name}</span>
+                <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
+              </div>
+            </label>
+          `).join("");
+        } catch (error) {
+          updateShiftUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
         }
-
-        updateShiftUsersList.innerHTML = users.map(user => `
-          <label class="user-row">
-            <input type="radio" class="update-user-radio" name="shiftUser" value="${user.id}">
-            <div class="user-info">
-              <span class="user-name">${user.name}</span>
-              <span class="user-meta">${formatRole(user.role)} • ${user.contact}</span>
-            </div>
-          </label>
-        `).join("");
-      } catch (error) {
-        updateShiftUsersList.innerHTML = '<p class="empty-text">Failed to load users.</p>';
-      }
-    }
-
-    function collectSelectedDeleteUsers() {
-      const checkedBoxes = document.querySelectorAll(".delete-user-checkbox:checked");
-      selectedUserIds = Array.from(checkedBoxes).map(box => parseInt(box.value));
-      return selectedUserIds;
-    }
-
-    function collectSelectedShiftUser() {
-      const selectedRadio = document.querySelector(".update-user-radio:checked");
-      selectedShiftUserId = selectedRadio ? parseInt(selectedRadio.value) : null;
-      return selectedShiftUserId;
-    }
-
-    openDeleteModalBtn.addEventListener("click", async () => {
-      await loadDeleteUsers();
-      openModal(deleteModal);
-    });
-
-    closeDeleteModalBtn.addEventListener("click", () => closeModal(deleteModal));
-    cancelDeleteBtn.addEventListener("click", () => closeModal(deleteModal));
-
-    goConfirmDeleteBtn.addEventListener("click", () => {
-      const selected = collectSelectedDeleteUsers();
-
-      if (!selected.length) {
-        alert("Please select at least one user.");
-        return;
       }
 
-      if (selected.length === 1) {
-        confirmDeleteText.textContent = "Are you sure you want to delete this user?";
-      } else {
-        confirmDeleteText.textContent = `Are you sure you want to delete ${selected.length} users?`;
+      function collectSelectedDeleteUsers() {
+        const checkedBoxes = document.querySelectorAll(".delete-user-checkbox:checked");
+        selectedUserIds = Array.from(checkedBoxes).map(box => parseInt(box.value));
+        return selectedUserIds;
       }
 
-      openModal(confirmModal);
-    });
+      function collectSelectedShiftUser() {
+        const selectedRadio = document.querySelector(".update-user-radio:checked");
+        selectedShiftUserId = selectedRadio ? parseInt(selectedRadio.value) : null;
+        return selectedShiftUserId;
+      }
 
-    closeConfirmModalBtn.addEventListener("click", () => closeModal(confirmModal));
-    cancelConfirmBtn.addEventListener("click", () => closeModal(confirmModal));
+      if (openDeleteModalBtn) {
+        openDeleteModalBtn.addEventListener("click", async () => {
+          await loadDeleteUsers();
+          openModal(deleteModal);
+        });
+      }
 
-    confirmDeleteBtn.addEventListener("click", async () => {
-      try {
-        const response = await fetch("/api/delete-users", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ user_ids: selectedUserIds })
+      if (closeDeleteModalBtn) {
+        closeDeleteModalBtn.addEventListener("click", () => closeModal(deleteModal));
+      }
+
+      if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener("click", () => closeModal(deleteModal));
+      }
+
+      if (goConfirmDeleteBtn) {
+        goConfirmDeleteBtn.addEventListener("click", () => {
+          const selected = collectSelectedDeleteUsers();
+
+          if (!selected.length) {
+            alert("Please select at least one user.");
+            return;
+          }
+
+          if (selected.length === 1) {
+            confirmDeleteText.textContent = "Are you sure you want to delete this user?";
+          } else {
+            confirmDeleteText.textContent = `Are you sure you want to delete ${selected.length} users?`;
+          }
+
+          openModal(confirmModal);
+        });
+      }
+
+      if (closeConfirmModalBtn) {
+        closeConfirmModalBtn.addEventListener("click", () => closeModal(confirmModal));
+      }
+
+      if (cancelConfirmBtn) {
+        cancelConfirmBtn.addEventListener("click", () => closeModal(confirmModal));
+      }
+
+      if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener("click", async () => {
+          try {
+            const response = await fetch("/api/delete-users", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ user_ids: selectedUserIds })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              closeModal(confirmModal);
+              closeModal(deleteModal);
+              window.location.reload();
+            } else {
+              alert(result.message || "Deletion failed.");
+            }
+          } catch (error) {
+            alert("Something went wrong while deleting users.");
+          }
+        });
+      }
+
+      if (openUpdateShiftModalBtn) {
+        openUpdateShiftModalBtn.addEventListener("click", async () => {
+          await loadUpdateShiftUsers();
+          openModal(updateShiftModal);
+        });
+      }
+
+      if (closeUpdateShiftModalBtn) {
+        closeUpdateShiftModalBtn.addEventListener("click", () => closeModal(updateShiftModal));
+      }
+
+      if (cancelUpdateShiftBtn) {
+        cancelUpdateShiftBtn.addEventListener("click", () => closeModal(updateShiftModal));
+      }
+
+      if (goToUpdateShiftBtn) {
+        goToUpdateShiftBtn.addEventListener("click", () => {
+          const userId = collectSelectedShiftUser();
+
+          if (!userId) {
+            alert("Please select one user.");
+            return;
+          }
+
+          window.location.href = `/update-shift/${userId}`;
+        });
+      }
+
+      if (logoutBtn && logoutModal && cancelLogout && confirmLogout) {
+        logoutBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          logoutModal.style.display = "flex";
         });
 
-        const result = await response.json();
+        cancelLogout.addEventListener("click", function () {
+          logoutModal.style.display = "none";
+        });
 
-        if (result.success) {
-          closeModal(confirmModal);
-          closeModal(deleteModal);
-          window.location.reload();
-        } else {
-          alert(result.message || "Deletion failed.");
+        confirmLogout.addEventListener("click", function () {
+          window.location.href = "/logout";
+        });
+      }
+
+      window.addEventListener("click", function (e) {
+        if (e.target === deleteModal) closeModal(deleteModal);
+        if (e.target === confirmModal) closeModal(confirmModal);
+        if (e.target === updateShiftModal) closeModal(updateShiftModal);
+        if (e.target === logoutModal) {
+          logoutModal.style.display = "none";
         }
-      } catch (error) {
-        alert("Something went wrong while deleting users.");
-      }
-    });
-
-    openUpdateShiftModalBtn.addEventListener("click", async () => {
-      await loadUpdateShiftUsers();
-      openModal(updateShiftModal);
-    });
-
-    closeUpdateShiftModalBtn.addEventListener("click", () => closeModal(updateShiftModal));
-    cancelUpdateShiftBtn.addEventListener("click", () => closeModal(updateShiftModal));
-
-    goToUpdateShiftBtn.addEventListener("click", () => {
-      const userId = collectSelectedShiftUser();
-
-      if (!userId) {
-        alert("Please select one user.");
-        return;
-      }
-
-      window.location.href = `/update-shift/${userId}`;
-    });
-
-    window.addEventListener("click", (e) => {
-      if (e.target === deleteModal) closeModal(deleteModal);
-      if (e.target === confirmModal) closeModal(confirmModal);
-      if (e.target === updateShiftModal) closeModal(updateShiftModal);
+      });
     });
   </script>
 
-  <!-- LOGOUT MODAL -->
-<div id="logoutModal" class="modal">
-
-  <div class="modal-box">
-
-    <h3>Confirm Logout</h3>
-
-    <p>Are you sure you want to log out?</p>
-
-    <div class="modal-actions">
-      <button id="cancelLogout">Cancel</button>
-      <button id="confirmLogout" class="danger-btn">Logout</button>
-    </div>
-
-  </div>
-
-</div>
 </body>
 </html>
