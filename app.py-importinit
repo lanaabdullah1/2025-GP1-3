@@ -1,0 +1,490 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from werkzeug.security import generate_password_hash, check_password_hash
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import re
+
+app = Flask(__name__)
+app.secret_key = "eyecept-secret-key"
+
+DAYS_OPTIONS = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+]
+
+DB_HOST = "db.axskxtxwktcgcrnghgmf.supabase.co"
+DB_PORT = "5432"
+DB_NAME = "postgres"
+DB_USER = "postgres"
+DB_PASSWORD = "eyeCEPT!27ksu"
+
+
+def get_db_connection():
+    return psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        cursor_factory=RealDictCursor
+    )
+
+
+def format_role(role):
+    return role.replace("_", " ").title()
+
+
+def is_strong_password(password):
+    pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$"
+    return re.match(pattern, password) is not None
+
+
+def get_users_count():
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS total FROM users")
+            result = cursor.fetchone()
+            return result["total"]
+
+
+def is_logged_in():
+    return "user" in session and "user_id" in session
+
+
+@app.route('/')
+def home():
+    try:
+        users_count = get_users_count()
+        show_register = (users_count == 0)
+    except psycopg2.Error as e:
+        print("Database error on home route:", e)
+        show_register = False
+
+    return render_template('index.html', show_register=show_register)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if not email or not password:
+            return render_template('log.html', error="Please enter email and password.")
+
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id, email, password_hash, role, first_name, last_name
+                        FROM users
+                        WHERE email = %s
+                        LIMIT 1
+                    """, (email,))
+                    user = cursor.fetchone()
+
+            if user and user["password_hash"] and check_password_hash(user["password_hash"], password):
+                session.clear()
+                session['user'] = user["email"]
+                session['user_id'] = user["id"]
+                session['role'] = user["role"]
+                session['name'] = f'{user["first_name"]} {user["last_name"]}'
+                return redirect(url_for('account'))
+
+            return render_template('log.html', error="Wrong login")
+
+        except psycopg2.Error:
+            return render_template('log.html', error="Database error. Please try again.")
+
+    return render_template('log.html')
+
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    email = request.form.get('email', '').strip()
+    new_password = request.form.get('new_password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+
+    if not email or not new_password or not confirm_password:
+        flash("Please fill in all fields.", "error")
+        return redirect(url_for('login'))
+
+    if not is_strong_password(new_password):
+        flash(
+            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.",
+            "error"
+        )
+        return redirect(url_for('login'))
+
+    if new_password != confirm_password:
+        flash("Confirm password must match the new password.", "error")
+        return redirect(url_for('login'))
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id
+                    FROM users
+                    WHERE email = %s
+                    LIMIT 1
+                """, (email,))
+                user = cursor.fetchone()
+
+                if not user:
+                    flash("Email not found.", "error")
+                    return redirect(url_for('login'))
+
+                password_hash = generate_password_hash(new_password)
+
+                cursor.execute("""
+                    UPDATE users
+                    SET password_hash = %s
+                    WHERE email = %s
+                """, (password_hash, email))
+            conn.commit()
+
+        flash("Password reset successfully.", "success")
+        return redirect(url_for('login'))
+
+    except psycopg2.Error as e:
+        flash(f"Database error: {e}", "error")
+        return redirect(url_for('login'))
+
+
+@app.route("/manage-users", methods=["GET", "POST"])
+def manage_users():
+    if not is_logged_in():
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        selected_role = request.form.get("role")
+
+        if not selected_role:
+            flash("Please choose a user type first.", "error")
+            return redirect(url_for("manage_users"))
+
+        if selected_role in ["admin", "security_operator"]:
+            return redirect(url_for("register", role=selected_role))
+
+        if selected_role == "field_officer":
+            return redirect(url_for("register_fields"))
+
+        flash("Invalid role selected.", "error")
+        return redirect(url_for("manage_users"))
+
+    return render_template("ManageUsers.html")
+
+
+@app.route("/update-shift/<int:user_id>", methods=["GET", "POST"])
+def update_shift(user_id):
+    if not is_logged_in():
+        return redirect(url_for("home"))
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, first_name, last_name, shift_days, start_time, end_time, role
+                    FROM users
+                    WHERE id = %s
+                """, (user_id,))
+                user = cursor.fetchone()
+
+        if not user:
+            flash("User not found.", "error")
+            return redirect(url_for("manage_users"))
+
+        if request.method == "POST":
+            shift_days = request.form.getlist("shift_days")
+            start_time = request.form.get("start_time", "").strip()
+            end_time = request.form.get("end_time", "").strip()
+
+            if not shift_days:
+                flash("Please select at least one shift day.", "error")
+                return redirect(url_for("update_shift", user_id=user_id))
+
+            if not start_time or not end_time:
+                flash("Please select both start time and end time.", "error")
+                return redirect(url_for("update_shift", user_id=user_id))
+
+            shift_days_text = ",".join(shift_days)
+
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE users
+                        SET shift_days = %s, start_time = %s, end_time = %s
+                        WHERE id = %s
+                    """, (shift_days_text, start_time, end_time, user_id))
+                conn.commit()
+
+            flash("Shift updated successfully.", "success")
+            return redirect(url_for("manage_users"))
+
+        selected_days = user["shift_days"].split(",") if user["shift_days"] else []
+
+        return render_template(
+            "UpdateShift.html",
+            user=user,
+            selected_days=selected_days,
+            days_options=DAYS_OPTIONS,
+            formatted_role=format_role(user["role"])
+        )
+
+    except psycopg2.Error as e:
+        flash(f"Error updating shift: {e}", "error")
+        return redirect(url_for("manage_users"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    try:
+        users_count = get_users_count()
+    except psycopg2.Error as e:
+        flash(f"Database error: {e}", "error")
+        return redirect(url_for("home"))
+
+    if users_count > 0 and not is_logged_in():
+        return redirect(url_for("home"))
+
+    selected_role = request.args.get("role", "security_operator")
+
+    if request.method == "POST":
+        first_name = request.form.get("firstName", "").strip().title()
+        last_name = request.form.get("lastName", "").strip().title()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+        shift_days = request.form.getlist("shift_days")
+        start_time = request.form.get("start_time", "").strip()
+        end_time = request.form.get("end_time", "").strip()
+        role = request.form.get("role", "security_operator").strip()
+
+        if not first_name or not last_name or not email or not password:
+            flash("Please fill in all required fields.", "error")
+            return redirect(url_for("register", role=role))
+
+        if not shift_days:
+            flash("Please select at least one shift day.", "error")
+            return redirect(url_for("register", role=role))
+
+        if not start_time or not end_time:
+            flash("Please select both start time and end time.", "error")
+            return redirect(url_for("register", role=role))
+
+        if users_count == 0:
+            role = "admin"
+        elif role not in ["admin", "security_operator"]:
+            flash("Invalid role for this form.", "error")
+            return redirect(url_for("manage_users"))
+
+        shift_days_text = ",".join(shift_days)
+        password_hash = generate_password_hash(password)
+
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO users (
+                            first_name, last_name, email, password_hash,
+                            phone_number, shift_days, start_time, end_time, role
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        first_name,
+                        last_name,
+                        email,
+                        password_hash,
+                        None,
+                        shift_days_text,
+                        start_time,
+                        end_time,
+                        role
+                    ))
+                conn.commit()
+
+            if users_count == 0:
+                flash("Admin account created successfully. Please log in.", "success")
+                return redirect(url_for("login"))
+
+            if role == "admin":
+                flash("Admin added successfully.", "success")
+            elif role == "security_operator":
+                flash("Security Operator added successfully.", "success")
+            else:
+                flash("User added successfully.", "success")
+
+            return redirect(url_for("manage_users"))
+
+        except psycopg2.IntegrityError:
+            flash("Email already exists.", "error")
+            return redirect(url_for("register", role=role))
+
+        except psycopg2.Error as e:
+            flash(f"Database error: {e}", "error")
+            return redirect(url_for("register", role=role))
+
+    return render_template("Register.html", selected_role=selected_role)
+
+
+@app.route("/register-fields", methods=["GET", "POST"])
+def register_fields():
+    if not is_logged_in():
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        first_name = request.form.get("firstName", "").strip().title()
+        last_name = request.form.get("lastName", "").strip().title()
+        phone = request.form.get("phoneNumber", "").strip()
+        shift_days = request.form.getlist("shift_days")
+        start_time = request.form.get("start_time", "").strip()
+        end_time = request.form.get("end_time", "").strip()
+
+        if not first_name or not last_name or not phone:
+            flash("Please fill all required fields.", "error")
+            return redirect(url_for("register_fields"))
+
+        if not shift_days:
+            flash("Please select at least one shift day.", "error")
+            return redirect(url_for("register_fields"))
+
+        if not start_time or not end_time:
+            flash("Please select shift time.", "error")
+            return redirect(url_for("register_fields"))
+
+        shift_days_text = ",".join(shift_days)
+        role = "field_officer"
+
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO users (
+                            first_name, last_name, email, password_hash,
+                            phone_number, shift_days, start_time, end_time, role
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        first_name,
+                        last_name,
+                        None,
+                        None,
+                        phone,
+                        shift_days_text,
+                        start_time,
+                        end_time,
+                        role
+                    ))
+                conn.commit()
+
+            flash("Field officer added successfully.", "success")
+            return redirect(url_for("manage_users"))
+
+        except psycopg2.Error as e:
+            flash(f"Error: {e}", "error")
+            return redirect(url_for("register_fields"))
+
+    return render_template("RegisterFeild.html")
+
+
+@app.route("/api/users", methods=["GET"])
+def get_users():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Unauthorized access."}), 401
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, first_name, last_name, email, phone_number, role
+                    FROM users
+                    ORDER BY first_name ASC, last_name ASC
+                """)
+                users = cursor.fetchall()
+
+        users_list = []
+        for user in users:
+            display_contact = user["email"] if user["email"] else user["phone_number"]
+            users_list.append({
+                "id": user["id"],
+                "name": f'{user["first_name"]} {user["last_name"]}',
+                "role": user["role"],
+                "contact": display_contact or "-"
+            })
+
+        return jsonify(users_list)
+
+    except psycopg2.Error as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route("/api/delete-users", methods=["POST"])
+def delete_users():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Unauthorized access."}), 401
+
+    data = request.get_json()
+    user_ids = data.get("user_ids", [])
+
+    if not user_ids:
+        return jsonify({"success": False, "message": "No users selected."}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM users WHERE id = ANY(%s)", (user_ids,))
+            conn.commit()
+
+        return jsonify({"success": True, "message": "Selected users deleted successfully."})
+
+    except psycopg2.Error as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route("/dashboard")
+def dashboard():
+    if not is_logged_in():
+        return redirect(url_for('home'))
+
+    snapshots = [
+        {"id": 1, "img": "...", "level": "Low", "date": "...", "time": "..."},
+        {"id": 2, "img": "...", "level": "High", "date": "...", "time": "..."}
+    ]
+    return render_template("dashboard.html", snapshots=snapshots)
+
+
+@app.route("/details/<int:id>")
+def details(id):
+    if not is_logged_in():
+        return redirect(url_for('home'))
+
+    snapshots = [
+        {"id": 1, "img": "...", "level": "Low", "date": "...", "time": "..."},
+        {"id": 2, "img": "...", "level": "High", "date": "...", "time": "..."}
+    ]
+
+    snapshot = next((s for s in snapshots if s["id"] == id), None)
+    return render_template("details.html", data=snapshot)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+
+
+@app.route('/account')
+def account():
+    if not is_logged_in():
+        return redirect(url_for('home'))
+
+    return render_template('account.html')
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
