@@ -371,7 +371,35 @@ def logout():
 
 @app.route('/account')
 def account():
-    return render_template('account.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT first_name, last_name, email, role
+                    FROM users
+                    WHERE id = %s
+                    LIMIT 1
+                """, (session['user_id'],))
+                user = cursor.fetchone()
+
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        formatted_role = format_role(user["role"]) if user["role"] else "-"
+
+        return render_template(
+            'account.html',
+            user=user,
+            formatted_role=formatted_role
+        )
+
+    except psycopg2.Error:
+        return redirect(url_for('login'))
+
 
 
 if __name__ == "__main__":
