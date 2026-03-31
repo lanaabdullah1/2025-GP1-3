@@ -1,0 +1,134 @@
+.index-page {
+  padding: 50px 20px 80px;
+  min-height: calc(100vh - 160px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* الكارد */
+.index-container {
+  width: min(820px, 92%);
+  background: rgba(28, 44, 82, 0.95);
+  border-radius: 24px;
+  padding: 40px 42px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+/* المحتوى */
+.index-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 50px;
+  min-height: 320px;
+  flex-wrap: nowrap;
+}
+
+/* النص */
+.index-text-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 22px; /* 🔥 مسافات مرتبة */
+}
+
+/* العنوان */
+.index-title {
+  color: #ffffff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* الوصف */
+.index-description {
+  color: #dbe7ff;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 380px;
+}
+
+/* الأزرار */
+.index-buttons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.index-buttons a {
+  text-decoration: none;
+}
+
+/* الزر */
+.index-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.primary-btn {
+  background: #4b74ff;
+  color: #ffffff;
+}
+
+.primary-btn:hover {
+  background: #3f67ee;
+}
+
+/* الصورة */
+.index-image-section {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 🔥 أهم تعديل */
+.index-image {
+  max-width: 100%;
+  height: auto !important;
+  object-fit: contain;
+
+  border-radius: 18px; /* 🔥 منحنيات */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* موبايل */
+@media (max-width: 768px) {
+  .index-content {
+    flex-direction: column;
+    text-align: center;
+    min-height: auto;
+  }
+
+  .index-text-section {
+    align-items: center;
+  }
+
+  .index-title,
+  .index-description {
+    text-align: center;
+  }
+
+  .index-image {
+    width: 160px;
+  }
+}
+
+@media (max-width: 700px) {
+  .index-container {
+    padding: 28px 22px;
+  }
+
+  .index-title {
+    font-size: 1.9rem;
+  }
+}
