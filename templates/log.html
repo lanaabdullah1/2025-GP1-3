@@ -15,15 +15,23 @@
 <main class="login-main">
   <div class="login-box">
 
-    <img src="{{ url_for('static', filename='images/logo.png') }}" class="login-logo" alt="Eyecept Logo">
-
     <h2>Login</h2>
 
     {% if error %}
-      <p style="color:red;">{{ error }}</p>
+      <p class="flash-message error">{{ error }}</p>
     {% endif %}
 
-    <form class="login-form" action="/login" method="POST">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <p class="flash-message {{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form class="login-form" action="{{ url_for('login') }}" method="POST">
       <input type="email" name="email" placeholder="Email" required>
       <input type="password" name="password" placeholder="Password" required>
       <p class="forgot-password" id="forgotPassword">Forgot Password?</p>
@@ -33,9 +41,213 @@
   </div>
 </main>
 
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="resetPasswordModal">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <h3>Reset Password</h3>
+      <button type="button" class="close-modal-btn" id="closeResetModalBtn">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <form class="reset-password-form" action="{{ url_for('reset_password') }}" method="POST" id="resetPasswordForm">
+        <input type="email" name="email" placeholder="Enter your email" required>
+
+        <input
+          type="password"
+          name="new_password"
+          id="newPassword"
+          placeholder="New password"
+          required
+        >
+
+        <ul class="password-rules" id="passwordRules">
+          <li id="rule-length" class="invalid">✘ At least 8 characters</li>
+          <li id="rule-upper" class="invalid">✘ At least one uppercase letter</li>
+          <li id="rule-lower" class="invalid">✘ At least one lowercase letter</li>
+          <li id="rule-number" class="invalid">✘ At least one number</li>
+          <li id="rule-special" class="invalid">✘ At least one special character</li>
+        </ul>
+
+        <input
+          type="password"
+          name="confirm_password"
+          id="confirmPassword"
+          placeholder="Confirm password"
+          required
+        >
+
+        <p id="confirmPasswordStatus" class="confirm-status invalid">✘ Passwords do not match</p>
+
+        <p class="reset-error-message hidden" id="resetPasswordError"></p>
+
+        <div class="modal-footer">
+          <button type="button" class="secondary-btn" id="cancelResetBtn">Cancel</button>
+          <button type="submit" class="primary-btn">Reset Password</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
 {% include 'footer.html' %}
 
 <script src="{{ url_for('static', filename='js/include.js') }}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const modal = document.getElementById("resetPasswordModal");
+  const openBtn = document.getElementById("forgotPassword");
+  const closeBtn = document.getElementById("closeResetModalBtn");
+  const cancelBtn = document.getElementById("cancelResetBtn");
+
+  const resetForm = document.getElementById("resetPasswordForm");
+  const newPassword = document.getElementById("newPassword");
+  const confirmPassword = document.getElementById("confirmPassword");
+  const errorBox = document.getElementById("resetPasswordError");
+  const confirmStatus = document.getElementById("confirmPasswordStatus");
+
+  const ruleLength = document.getElementById("rule-length");
+  const ruleUpper = document.getElementById("rule-upper");
+  const ruleLower = document.getElementById("rule-lower");
+  const ruleNumber = document.getElementById("rule-number");
+  const ruleSpecial = document.getElementById("rule-special");
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.classList.remove("hidden");
+  }
+
+  function hideError() {
+    errorBox.textContent = "";
+    errorBox.classList.add("hidden");
+  }
+
+  function setRuleState(element, isValid, validText, invalidText) {
+    if (isValid) {
+      element.classList.remove("invalid");
+      element.classList.add("valid");
+      element.textContent = "✔ " + validText;
+    } else {
+      element.classList.remove("valid");
+      element.classList.add("invalid");
+      element.textContent = "✘ " + invalidText;
+    }
+  }
+
+  function validatePasswordRules(password) {
+    const checks = {
+      length: password.length >= 8,
+      upper: /[A-Z]/.test(password),
+      lower: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[^A-Za-z\d]/.test(password)
+    };
+
+    setRuleState(ruleLength, checks.length, "At least 8 characters", "At least 8 characters");
+    setRuleState(ruleUpper, checks.upper, "At least one uppercase letter", "At least one uppercase letter");
+    setRuleState(ruleLower, checks.lower, "At least one lowercase letter", "At least one lowercase letter");
+    setRuleState(ruleNumber, checks.number, "At least one number", "At least one number");
+    setRuleState(ruleSpecial, checks.special, "At least one special character", "At least one special character");
+
+    return checks.length && checks.upper && checks.lower && checks.number && checks.special;
+  }
+
+  function validateConfirmPassword() {
+    const newPass = newPassword.value;
+    const confirmPass = confirmPassword.value;
+
+    if (!confirmPass) {
+      confirmStatus.classList.remove("valid");
+      confirmStatus.classList.add("invalid");
+      confirmStatus.textContent = "✘ Passwords do not match";
+      return false;
+    }
+
+    if (newPass === confirmPass) {
+      confirmStatus.classList.remove("invalid");
+      confirmStatus.classList.add("valid");
+      confirmStatus.textContent = "✔ Passwords match";
+      return true;
+    } else {
+      confirmStatus.classList.remove("valid");
+      confirmStatus.classList.add("invalid");
+      confirmStatus.textContent = "✘ Passwords do not match";
+      return false;
+    }
+  }
+
+  function resetValidationUI() {
+    hideError();
+    validatePasswordRules("");
+    confirmStatus.classList.remove("valid");
+    confirmStatus.classList.add("invalid");
+    confirmStatus.textContent = "✘ Passwords do not match";
+  }
+
+  if (openBtn && modal) {
+    openBtn.addEventListener("click", function () {
+      modal.classList.remove("hidden");
+      resetForm.reset();
+      resetValidationUI();
+    });
+  }
+
+  if (closeBtn && modal) {
+    closeBtn.addEventListener("click", function () {
+      modal.classList.add("hidden");
+      hideError();
+    });
+  }
+
+  if (cancelBtn && modal) {
+    cancelBtn.addEventListener("click", function () {
+      modal.classList.add("hidden");
+      hideError();
+    });
+  }
+
+  newPassword.addEventListener("input", function () {
+    validatePasswordRules(newPassword.value);
+    validateConfirmPassword();
+    hideError();
+  });
+
+  confirmPassword.addEventListener("input", function () {
+    validateConfirmPassword();
+    hideError();
+  });
+
+  if (resetForm) {
+    resetForm.addEventListener("submit", function (e) {
+      hideError();
+
+      const isPasswordValid = validatePasswordRules(newPassword.value);
+      const isConfirmValid = validateConfirmPassword();
+
+      if (!isPasswordValid) {
+        e.preventDefault();
+        showError("Password does not meet the required conditions.");
+        return;
+      }
+
+      if (!isConfirmValid) {
+        e.preventDefault();
+        showError("Confirm password must match the new password.");
+      }
+    });
+  }
+
+  window.addEventListener("click", function (e) {
+    if (e.target === modal) {
+      modal.classList.add("hidden");
+      hideError();
+    }
+  });
+});
+</script>
 
 </body>
 </html>
