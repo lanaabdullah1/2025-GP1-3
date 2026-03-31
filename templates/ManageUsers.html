@@ -11,22 +11,17 @@
 </head>
 <body>
 
-  <!-- Header -->
   <header class="main-header">
     <div class="header-container">
-
-      <a href="/dashboard" class="brand">
+      <a href="{{ url_for('dashboard') }}" class="brand">
         <img src="{{ url_for('static', filename='images/Logo.PNG') }}" alt="Eyecept Logo" class="brand-logo">
       </a>
 
       <nav class="nav-links">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/alerts">Alerts</a>
-        <a href="/reports">Reports</a>
-        <a href="/settings">Settings</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('account') }}">Account</a>
         <a href="#" class="logout-link" id="logoutBtn">Logout</a>
       </nav>
-
     </div>
   </header>
 
@@ -44,7 +39,6 @@
         {% endif %}
       {% endwith %}
 
-      <!-- ADD USERS -->
       <section class="manage-section">
         <h2 class="section-title">Add Users</h2>
 
@@ -74,7 +68,6 @@
 
       <div class="section-divider"></div>
 
-      <!-- DELETE USERS -->
       <section class="manage-section">
         <h2 class="section-title">Delete Users</h2>
 
@@ -90,7 +83,6 @@
 
       <div class="section-divider"></div>
 
-      <!-- UPDATE SHIFT -->
       <section class="manage-section">
         <h2 class="section-title">Update Shift</h2>
 
