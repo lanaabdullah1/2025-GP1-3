@@ -11,6 +11,7 @@ The goal of Eyecept is to provide an organized security monitoring platform that
 
 ## Technologies Used
 - Python
+- OpenCV
 - Flask
 - HTML
 - CSS
