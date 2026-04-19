@@ -1,0 +1,86 @@
+{% include "layouts/head.html" %}
+{% include "layouts/header.html" %}
+
+<section class="gray pt-5 pb-5">
+    <div class="container-fluid">
+        <div class="row">
+
+            <div class="col-lg-3 col-md-4 col-sm-12">
+                <div class="property_dashboard_navbar">
+
+                    <div class="dash_user_avater">
+
+                        {% if role == "Admin" %}
+                        <i class="fa fa-user-gear hicon2"></i>
+                        {% elif role == "Security Operator" %}
+                        <i class="fa fa-video hicon2"></i>
+                        {% elif role == "Security Field" %}
+                        <i class="fa fa-bell hicon2"></i>
+                        {% endif %}
+
+                        <h4>{{ user_name }}</h4>
+                        <span>{{ role }}</span>
+
+                    </div>
+
+                    <div class="dash_user_menues">
+                        <ul>
+
+                            {% if is_admin %}
+                            <li class="{% if request.path == '/users_list' %}active{% endif %}">
+                                <a href="/users_list">Users</a>
+                            </li>
+
+                            <li class="{% if request.path == '/user_add' %}active{% endif %}">
+                                <a href="/user_add">Add User</a>
+                            </li>
+                            {% endif %}
+
+
+                            {% if is_operator %}
+                            <li class="{% if request.path == '/operator_monitoring' %}active{% endif %}">
+                                <a href="/operator_monitoring">Monitoring</a>
+                            </li>
+                            {% endif %}
+
+
+                            {% if is_field %}
+                            <li class="{% if request.path == '/field_alerts' %}active{% endif %}">
+                                <a href="/field_alerts">Alerts</a>
+                            </li>
+                            {% endif %}
+
+
+                            {% if is_operator %}
+                            <li class="{% if request.path == '/operator_alerts' %}active{% endif %}">
+                                <a href="/operator_alerts">Alerts</a>
+                            </li>
+                            {% endif %}
+
+                            <li class="{% if request.path == '/update_profile' %}active{% endif %}">
+                                <a href="/update_profile">Update Profile</a>
+                            </li>
+
+                            <li class="{% if request.path == '/update_password' %}active{% endif %}">
+                                <a href="/update_password">Reset Password</a>
+                            </li>
+
+                            <li><a href="/logout">Logout</a></li>
+
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-lg-9 col-md-8 col-sm-12">
+                <div class="dashboard-body">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% include "layouts/footer.html" %}
