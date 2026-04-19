@@ -4,10 +4,10 @@
 # Eyecept Security System
 
 ## Introduction
-Eyecept is a real-time intelligent security monitoring system designed to support surveillance and alert handling in sensitive environments. The system includes authentication pages, password recovery flow, user management features, operator monitoring pages, an admin dashboard, and camera integration.
+Eyecept is a real-time intelligent security monitoring system designed to support surveillance and alert handling in sensitive environments. The system provides authentication, password recovery, user management, operator monitoring, and alert handling through a web-based interface.
 
 ## Project Goal
-The goal of Eyecept is to provide an organized security monitoring platform that helps manage users, monitor system activity, handle alerts, and support camera-based operation through a web application.
+The goal of Eyecept is to build an organized security platform that manages users, monitors activity, handles alerts, and integrates camera-based functionality.
 
 ## Technologies Used
 - Python
@@ -19,30 +19,30 @@ The goal of Eyecept is to provide an organized security monitoring platform that
 - SQLite
 - JSON
 
-## Main Project Files
+## Main System  Files
 - `main.py`
 - `routes.py`
 - `session.py`
 - `camera.py`
-- `MCP.json`
+
+## Run Files
+- run_project.bat — runs the project
+- open_database.bat — opens the database
 
 ## Main Pages
+- Admin Dashboard
+- Choose User
 - Forgot Password
 - Login
-- Choose User
 - New Password
+- Operator
+- Operator Alerts
+- Operator Monitoring
 - Update Password
-- Verify Code
+- Update Profile
 - Add User
 - Update User
-- List User
-- Update Profile
-- Operator
-- Monitoring and Operating Alert
-- Admin Dashboard
+- Users List
+- Verify Code
 
-## Launch Instructions
-1. Install Python.
-2. Install project requirements:
-   ```bash
-   pip install -r requirements.txt
+
