@@ -1,0 +1,83 @@
+{% extends "layouts/user_layout.html" %}
+
+{% block content %}
+
+<div class="frm_submit_block">
+    <h4>Users List</h4>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 col-md-12">
+        <div class="dashboard_property">
+            <div class="table-responsive">
+
+                <table class="table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Num</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% if not users %}
+                        <tr>
+                            <td colspan="6">No users</td>
+                        </tr>
+                        {% else %}
+
+                        {% for user in users %}
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td>
+                                <h6>{{ user[1] }}</h6>
+                            </td>
+
+                            <td>
+                                <h6>{{ user[2] }}</h6>
+                            </td>
+
+                            <td>
+                                <h6>{{ user[5] or '-' }}</h6>
+                            </td>
+
+                            <td>
+                                <h6>{{ user[4] }}</h6>
+                            </td>
+
+                            <td>
+                                <div class="_leads_action">
+
+                                    <a href="/user_update/{{ user[0] }}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <a href="/user_delete/{{ user[0] }}"
+                                       onclick="return confirm('Delete user?');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+
+                                </div>
+                            </td>
+
+                        </tr>
+                        {% endfor %}
+
+                        {% endif %}
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
