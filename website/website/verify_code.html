@@ -1,0 +1,49 @@
+{% extends "layouts/guest_layout.html" %}
+
+{% block content %}
+
+<section class="">
+    <div class="container">
+
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-8">
+                <div class="sec-heading center">
+                    <h3>Verify Code</h3>
+                    {% if success %}
+                    <h5 class="text-green">{{ success }}</h5>
+                    {% endif %}
+                    {% if error %}
+                    <h5 class="text-red">{{ error }}</h5>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="resp_log_wrap">
+                    <div class="resp_log_caption">
+
+                        <form method="POST" action="{{ url_for('verify_code', user_id=user_id) }}">
+                            <div class="form-group">
+                                <label>Code <span class="text-danger">*</span></label>
+                                <input type="text" name="code" class="form-control" placeholder="Enter code" required>
+                            </div>
+
+                            <div class="form-group">
+                                <button class="btn btn-danger fw-medium full-width">
+                                    Verify
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}
