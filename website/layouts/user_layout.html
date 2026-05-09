@@ -1,7 +1,46 @@
 {% include "layouts/head.html" %}
 {% include "layouts/header.html" %}
 
-<section class="gray pt-5 pb-5">
+
+<style>
+
+    #confirmModalMessage {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.yes-btn {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+
+.yes-btn:hover,
+.yes-btn:focus,
+.yes-btn:active {
+    background-color: #bb2d3b !important;
+    border-color: #bb2d3b !important;
+    box-shadow: none !important;
+}
+
+.cancel-btn {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+}
+
+.cancel-btn:hover,
+.cancel-btn:focus,
+.cancel-btn:active {
+    background-color: #565e64 !important;
+    border-color: #565e64 !important;
+    color: white !important;
+    box-shadow: none !important;
+}
+
+</style>
+<section class="gray pb-5">
     <div class="container-fluid">
         <div class="row">
 
@@ -27,6 +66,7 @@
                         <ul>
 
                             {% if is_admin %}
+
                             <li class="{% if request.path == '/users_list' %}active{% endif %}">
                                 <a href="/users_list">Users</a>
                             </li>
@@ -34,6 +74,15 @@
                             <li class="{% if request.path == '/user_add' %}active{% endif %}">
                                 <a href="/user_add">Add User</a>
                             </li>
+
+                            <li class="{% if request.path == '/cameras_list' %}active{% endif %}">
+                                <a href="/cameras_list">Cameras</a>
+                            </li>
+
+                            <li class="{% if request.path == '/camera_add' %}active{% endif %}">
+                                <a href="/camera_add">Add Camera</a>
+                            </li>
+
                             {% endif %}
 
 
@@ -65,7 +114,19 @@
                                 <a href="/update_password">Reset Password</a>
                             </li>
 
-                            <li><a href="/logout">Logout</a></li>
+                           <li>
+                                <a href="#"
+                                onclick="showConfirmModal(
+                                    'Are you sure you want to logout?',
+                                    function () {
+                                        window.location.href = '/logout';
+                                    }
+                                ); return false;">
+
+                                    Logout
+
+                                </a>
+                            </li>
 
                         </ul>
                     </div>
@@ -83,4 +144,60 @@
     </div>
 </section>
 
+
+<!-- Reusable Confirm Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Action</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" id="confirmModalMessage">
+        Are you sure?
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+
+        <button type="button" class="btn btn-danger yes-btn" id="confirmModalYesBtn">
+          Yes
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
 {% include "layouts/footer.html" %}
+
+<script>
+let confirmAction = null;
+
+function showConfirmModal(message, action) {
+
+    document.getElementById("confirmModalMessage").innerText = message;
+
+    confirmAction = action;
+
+    const modalElement = document.getElementById("confirmModal");
+
+    const modal = new window.bootstrap.Modal(modalElement);
+
+    modal.show();
+}
+
+document.getElementById("confirmModalYesBtn").addEventListener("click", function () {
+
+    if (confirmAction) {
+        confirmAction();
+    }
+
+});
+</script>
