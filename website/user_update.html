@@ -24,23 +24,32 @@
 
                 <!-- ROLE -->
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>
-                                Role <span class="text-danger">*</span>
-                            </label>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            Role 
+                        </label>
 
-                            <input type="text" class="form-control" value="{{ user[4] }}" readonly>
-                        </div>
+                        {% if user[4] == "Security Field" %}
+                        <select name="role" class="form-control" required>
+                            <option value="Security Field" selected>Security Field</option>
+                            <option value="Security Operator">Security Operator</option>
+                        </select>
+                        {% else %}
+                        <input type="text" class="form-control" value="{{ user[4] }}" readonly>
+                        <input type="hidden" name="role" value="{{ user[4] }}">
+                        {% endif %}
+                        
                     </div>
+                </div>
 
-                
+
 
                 <!-- NAME -->
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>
-                            Name <span class="text-danger">*</span>
+                            Name 
                         </label>
 
                         <input name="name" type="text" class="form-control" value="{{ user[1] }}"
@@ -48,17 +57,58 @@
                     </div>
                 </div>
 
-           
-                    <!-- EMAIL -->
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>
-                                Email <span class="text-danger">*</span>
-                            </label>
 
-                            <input name="email" type="email" class="form-control" value="{{ user[2] }}" required>
-                        </div>
+                <!-- EMAIL -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            Email 
+                        </label>
+
+      <input type="text"
+       name="email"
+       class="form-control"
+       placeholder="Email Address"
+       required
+       value="{{ user[2] }}"
+
+       oninvalid="
+            if (this.value.trim() === '') {
+
+                this.setCustomValidity('Please fill out this field.');
+
+            } else {
+
+                this.setCustomValidity(
+                    'Email must contain .eyecept before @ like: ali.eyecept@gmail.com'
+                );
+            }
+       "
+
+       oninput="
+            const pattern =
+          /^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+
+            if (this.value.trim() === '') {
+
+                this.setCustomValidity('Please fill out this field.');
+
+            }
+            else if (!pattern.test(this.value)) {
+
+                this.setCustomValidity(
+                    'Email must contain .eyecept before @ like: ali.eyecept@gmail.com'
+                );
+
+            }
+            else {
+
+                this.setCustomValidity('');
+            }
+       ">
+
                     </div>
+                </div>
 
 
 
@@ -67,7 +117,7 @@
                     <div class="form-group">
                         <label>Password</label>
                         <input name="password" type="password" class="form-control"
-                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}" 
+                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}"
                             placeholder="Leave empty if no change"
                             title="Password must be at least 8 characters, include uppercase, lowercase, number, and special character">
 
@@ -80,10 +130,53 @@
                     <div class="form-group">
                         <label>Phone</label>
 
-                        <input name="phone" type="text" class="form-control" pattern="05[0-9]{8}" minlength="10"
-                            maxlength="10" inputmode="numeric" value="{{ user[5] or '' }}" required
-                            oninvalid="this.setCustomValidity('Phone number must start with 05 and be exactly 10 digits')"
-                            oninput="if (/\D/g.test(this.value)) this.value = this.value.replace(/\D/g,'')">
+    <input
+    name="phone"
+    type="text"
+    class="form-control"
+    minlength="10"
+    maxlength="10"
+    inputmode="numeric"
+    value="{{ user[5] or '' }}"
+    required
+
+    oninvalid="
+        this.setCustomValidity(
+            'Phone number must start with 05 and be exactly 10 digits'
+        )
+    "
+
+    oninput="
+        this.setCustomValidity('');
+
+        this.value = this.value.replace(/\D/g,'');
+
+        if (
+            this.value.length > 0 &&
+            !this.value.startsWith('05')
+        ) {
+
+            this.setCustomValidity(
+                'Phone number must start with 05 and be exactly 10 digits'
+            );
+
+        }
+        else if (
+            this.value.length > 0 &&
+            this.value.length < 10
+        ) {
+
+            this.setCustomValidity(
+                'Phone number must start with 05 and be exactly 10 digits'
+            );
+
+        }
+        else {
+
+            this.setCustomValidity('');
+        }
+    "
+>
                     </div>
                 </div>
 

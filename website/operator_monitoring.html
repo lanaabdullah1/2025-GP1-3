@@ -2,156 +2,634 @@
 
 {% block content %}
 
-<div class="row mb-3">
+<style>
 
-    <div class="col-md-2">
-        <select id="usb_index" class="form-control">
-            <option value="1">USB Camera 1</option>
-            <option value="2">USB Camera 2</option>
-        </select>
+.camera-wrapper{
+    position:relative;
+    width:100%;
+    background:#000;
+    border-radius:16px;
+    overflow:hidden;
+}
+
+#canvas{
+    width:100%;
+    display:block;
+    border-radius:16px;
+}
+
+.camera-overlay{
+    position:absolute;
+    inset:0;
+    background:transparent;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:10;
+    cursor:pointer;
+}
+
+.camera-overlay-content{
+    text-align:center;
+}
+
+.camera-overlay-content i{
+    color:#fff;
+    font-size:70px;
+}
+
+.camera-overlay-content h5{
+    color:#fff;
+    margin-top:15px;
+}
+
+.camera-btn{
+    border:none;
+    width:52px;
+    height:52px;
+    border-radius:14px;
+    color:#fff;
+    font-size:18px;
+    transition:.2s;
+}
+
+.camera-btn:hover{
+    transform:scale(1.05);
+}
+
+.stop-btn{
+    background:#35507a;
+}
+
+.roi-btn{
+    background:#f39a1f;
+}
+
+.camera-card{
+    width:100%;
+    background:#fff;
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    text-decoration:none;
+    transition:.2s;
+    border:2px solid transparent;
+}
+
+.camera-card:hover{
+    transform:translateY(-2px);
+}
+
+.active-camera{
+    border-color:#35507a;
+    background:#eef3fb;
+}
+
+.camera-name{
+    font-weight:600;
+    color:#222;
+}
+
+.camera-dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#17c964;
+}
+
+</style>
+
+<div class="row">
+
+    <div class="col-md-9">
+
+        <div class="dashboard_property">
+
+            {% if camera %}
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <div>
+
+                    <h4 class="mb-0">
+                        {{ camera[1] }}
+                    </h4>
+
+                    <small class="text-muted">
+                        Live Monitoring
+                    </small>
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        class="camera-btn stop-btn"
+                        onclick="toggleCamera()">
+
+                        <i id="toggleIcon"
+                           class="fas fa-pause"></i>
+
+                    </button>
+
+                    <button
+                        class="camera-btn roi-btn"
+                        onclick="resetROI()">
+
+                        <i class="fas fa-vector-square"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="camera-wrapper">
+
+                <canvas id="canvas"></canvas>
+
+                <div id="cameraOverlay"
+                     class="camera-overlay"
+                     onclick="toggleCamera()">
+
+                    <div class="camera-overlay-content">
+
+                        <i id="overlayIcon"
+                           class="fas fa-play"></i>
+
+                        <h5 id="overlayText"></h5>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-warning">
+                No cameras found
+            </div>
+
+            {% endif %}
+
+        </div>
+
     </div>
 
-    <div class="col-md-2">
-        <button class="btn btn-primary" onclick="useUSB()">USB</button>
+    <div class="col-md-3">
+
+        <div class="dashboard_property">
+
+            <h5 class="mb-3">
+                Cameras
+            </h5>
+
+            {% for c in cameras %}
+
+            <a href="/operator_monitoring/{{ c[0] }}"
+               class="camera-card {% if camera and camera[0] == c[0] %}active-camera{% endif %}">
+
+                <div>
+
+                    <div class="camera-name">
+                        {{ c[1] }}
+                    </div>
+
+                    <small class="text-muted">
+                        {{ c[3]|upper }}
+                    </small>
+
+                </div>
+
+                {% if camera and camera[0] == c[0] %}
+
+                <span class="camera-dot"></span>
+
+                {% endif %}
+
+            </a>
+
+            {% endfor %}
+
+        </div>
+
     </div>
 
-    <div class="col-md-2">
-        <input id="ip" class="form-control" placeholder="192.168.1.5:8080">
-    </div>
-
-    <div class="col-md-2">
-        <button class="btn btn-success" onclick="useIP()">IP</button>
-    </div>
-
-    <div class="col-md-2">
-<button class="btn btn-danger" onclick="stopCamera()">Stop</button>
-    </div>
-    <div class="col-md-2">
-    <button class="btn btn-warning" onclick="resetROI()">Reset ROI</button>
 </div>
-
-</div>
-
-<div id="status" class="mb-2 text-danger"></div>
-
-<canvas id="canvas" style="width:100%; border-radius:10px;"></canvas>
 
 <script>
+
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 let img = new Image();
 
-let startX = 0, startY = 0, endX = 0, endY = 0;
+let playing = true;
+
+let startX = 0;
+let startY = 0;
+let endX = 0;
+let endY = 0;
+
 let drawing = false;
 
-function startStream() {
-    img.src = "/video_feed?" + Date.now();
+let cameraLoaded = false;
+
+let cameraTimeout;
+
+function loadCamera(){
+
+    cameraLoaded = false;
+
+    clearTimeout(cameraTimeout);
+
+    cameraTimeout = setTimeout(() => {
+
+        if(!cameraLoaded && playing){
+
+            document.getElementById("cameraOverlay")
+            .style.display = "flex";
+
+            document.getElementById("overlayIcon")
+            .className = "fas fa-video-slash";
+
+            document.getElementById("overlayText")
+            .innerText =
+            "Camera is offline or not configured properly";
+        }
+
+    }, 4000);
+
+    img.src = "/video_feed/{{ camera[0] }}?" + Date.now();
 }
 
-function reloadStream() {
-    img.src = "/video_feed?" + Date.now();
-}
-
-function stopCamera() {
-    img.src = "";
-}
-
-function useUSB() {
-    let index = document.getElementById("usb_index")?.value || 1;
-
-    fetch("/set_camera", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            type: "usb",
-            index: index
-        })
-    }).then(() => reloadStream());
-}
-
-function useIP() {
-    let ip = document.getElementById("ip").value;
-
-    fetch("/set_camera", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            type: "ip",
-            ip: ip
-        })
-    }).then(() => reloadStream());
-}
-
-function resetROI() {
-    fetch("/reset_roi", { method: "POST" }).then(() => {
-        drawing = false;
-        startX = startY = endX = endY = 0;
-        reloadStream();
-    });
-}
+loadCamera();
 
 img.onload = function () {
+
+    cameraLoaded = true;
+
+    clearTimeout(cameraTimeout);
+
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
+
+    document.getElementById("cameraOverlay")
+    .style.display = "none";
+
 };
 
 function draw() {
-    if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    if (
+        img.complete &&
+        img.naturalWidth > 0 &&
+        playing
+    ) {
+
+        ctx.drawImage(
+            img,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
 
         if (drawing) {
+
             let x = Math.min(startX, endX);
             let y = Math.min(startY, endY);
+
             let w = Math.abs(endX - startX);
             let h = Math.abs(endY - startY);
 
             ctx.strokeStyle = "red";
             ctx.lineWidth = 2;
+
             ctx.strokeRect(x, y, w, h);
         }
     }
+
     requestAnimationFrame(draw);
 }
+
 draw();
 
+function toggleCamera(){
+
+    let overlay = document.getElementById("cameraOverlay");
+
+    if(playing){
+
+        img.src = "";
+
+        overlay.style.display = "none";
+
+        document.getElementById("overlayIcon")
+        .className = "fas fa-play";
+
+        document.getElementById("overlayText")
+        .innerText = "";
+
+        document.getElementById("toggleIcon")
+        .className = "fas fa-play";
+
+        playing = false;
+
+    }else{
+
+        overlay.style.display = "none";
+
+        document.getElementById("toggleIcon")
+        .className = "fas fa-pause";
+
+        playing = true;
+
+        loadCamera();
+    }
+}
+
+function resetROI() {
+
+    fetch("/reset_roi", {
+        method: "POST"
+    }).then(() => {
+
+        drawing = false;
+
+        startX = startY = endX = endY = 0;
+
+        loadCamera();
+
+    });
+}
+
 canvas.addEventListener("mousedown", (e) => {
+
+    if(!playing) return;
+
     drawing = true;
+
     startX = e.offsetX;
     startY = e.offsetY;
+
 });
 
 canvas.addEventListener("mousemove", (e) => {
+
     if (!drawing) return;
 
     const rect = canvas.getBoundingClientRect();
 
-    endX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    endY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    endX = (e.clientX - rect.left) *
+           (canvas.width / rect.width);
+
+    endY = (e.clientY - rect.top) *
+           (canvas.height / rect.height);
+
 });
 
 canvas.addEventListener("mouseup", (e) => {
+
+    if(!playing) return;
+
     drawing = false;
 
     const rect = canvas.getBoundingClientRect();
 
-    endX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    endY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    endX = (e.clientX - rect.left) *
+           (canvas.width / rect.width);
+
+    endY = (e.clientY - rect.top) *
+           (canvas.height / rect.height);
 
     fetch("/set_roi", {
+
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
         body: JSON.stringify({
+
             x1: Math.min(startX, endX),
             y1: Math.min(startY, endY),
+
             x2: Math.max(startX, endX),
             y2: Math.max(startY, endY)
+
         })
+
     });
+
 });
 
-window.onload = function () {
-    startStream();
-};
+let lastAlertId = null;
+
+fetch("/latest_alert")
+
+.then(r => r.json())
+
+.then(data => {
+
+    if(data.status == "ok"){
+
+        lastAlertId = data.id;
+    }
+});
+
+setInterval(checkAlerts, 2000);
+
+function checkAlerts(){
+
+    fetch("/latest_alert")
+
+    .then(r => r.json())
+
+    .then(data => {
+
+        if(data.status != "ok")
+            return;
+
+        if(data.id == lastAlertId)
+            return;
+
+        lastAlertId = data.id;
+
+        showAlert(data);
+
+    });
+
+}
+
+function showAlert(data){
+
+    document.getElementById("alertModal")
+    .style.display = "flex";
+
+    document.getElementById("alertTitle")
+    .innerText =
+    data.threat_level + " Threat Detected";
+
+    document.getElementById("alertText")
+    .innerText =
+    data.reason;
+
+    let sound =
+    document.getElementById("alertSound");
+
+    sound.pause();
+
+    sound.currentTime = 0;
+
+    const promise = sound.play();
+
+    if (promise !== undefined) {
+
+        promise
+        .then(() => {})
+        .catch(error => {
+            console.log(error);
+        });
+    }
+}
+
+function closeAlert(){
+
+    document.getElementById("alertModal")
+    .style.display = "none";
+}
+
+let audioUnlocked = false;
+
+function unlockAudio(){
+
+    if(audioUnlocked) return;
+
+    let sound =
+    document.getElementById("alertSound");
+
+    sound.volume = 0;
+
+    const p = sound.play();
+
+    if(p !== undefined){
+
+        p.then(() => {
+
+            sound.pause();
+
+            sound.currentTime = 0;
+
+            sound.volume = 1;
+
+            audioUnlocked = true;
+
+        })
+
+        .catch(() => {});
+    }
+}
+
+document.addEventListener(
+    "click",
+    unlockAudio,
+    { once:true }
+);
+
+document.addEventListener(
+    "touchstart",
+    unlockAudio,
+    { once:true }
+);
+
 </script>
+<div id="alertModal"
+     style="
+     display:none;
+     position:fixed;
+     inset:0;
+     background:rgba(0,0,0,.65);
+     z-index:99999;
+     align-items:center;
+     justify-content:center;
+     ">
+
+    <div style="
+        width:420px;
+        background:#fff;
+        border-radius:18px;
+        padding:25px;
+        text-align:center;
+    ">
+
+        <div style="
+            width:90px;
+            height:90px;
+            background:#ffefef;
+            color:#ff3b30;
+            border-radius:50%;
+            margin:auto;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:40px;
+        ">
+
+            <i class="fas fa-exclamation-triangle"></i>
+
+        </div>
+
+        <h3
+            id="alertTitle"
+            style="margin-top:20px;">
+
+            Threat Detected
+
+        </h3>
+
+        <p
+            id="alertText"
+            style="
+            color:#666;
+            margin-top:10px;
+            ">
+
+        </p>
+
+        <button
+            onclick="closeAlert()"
+            style="
+            margin-top:20px;
+            width:100%;
+            border:none;
+            background:#35507a;
+            color:#fff;
+            height:50px;
+            border-radius:12px;
+            font-size:16px;
+            ">
+
+            OK
+
+        </button>
+
+    </div>
+
+</div>
+
+<audio
+    id="alertSound"
+    preload="auto">
+
+    <source
+        src="/assets/alert.mp3"
+        type="audio/mpeg">
+
+</audio>
 {% endblock %}

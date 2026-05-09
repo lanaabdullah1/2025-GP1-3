@@ -26,14 +26,39 @@
                     <div class="resp_log_caption">
                         <div class="login-form">
 
-                            <form method="POST" action="/login?role={{ role }}">
+                           <form method="POST" action="/login?role={{ role }}">
 
                                 <div class="form-group">
                                     <label>Email</label>
                                     <div class="input-with-icon">
-                                        <input value="{{ email or '' }}" type="email" name="email"
-                                               class="form-control"
-                                               placeholder="Email Address" required/>
+                                 <input value="{{ email or '' }}"
+       type="text"
+       name="email"
+       class="form-control"
+       placeholder="Email Address"
+       required
+
+       oninvalid="
+            if (this.value.trim() === '') {
+                this.setCustomValidity('Please fill out this field.');
+            } else {
+                this.setCustomValidity('Email must contain .eyecept before @ like: ali.eyecept@gmail.com');
+            }
+       "
+
+       oninput="
+            const pattern =
+            /^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+            if (this.value.trim() === '') {
+                this.setCustomValidity('Please fill out this field.');
+            }
+            else if (!pattern.test(this.value)) {
+                this.setCustomValidity('Email must contain .eyecept before @ like: ali.eyecept@gmail.com');
+            }
+            else {
+                this.setCustomValidity('');
+            }
+       "/>
                                         <i class="ti-user"></i>
                                     </div>
                                 </div>

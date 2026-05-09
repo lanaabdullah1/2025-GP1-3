@@ -1,0 +1,153 @@
+{% extends "layouts/user_layout.html" %}
+
+{% block content %}
+
+<div class="frm_submit_block">
+    <h4>Add Camera</h4>
+
+    {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+    {% endif %}
+</div>
+
+    <div class="frm_submit_wrap">
+
+    {% if success %}
+    <div class="alert alert-success">
+        {{ success }}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+
+        <div class="form-group mb-3">
+            <label>Camera Name</label>
+
+            <input
+                name="name"
+                type="text"
+                class="form-control"
+                required>
+        </div>
+
+        <div class="form-group mb-3">
+            <label>Camera Type</label>
+
+            <select
+                name="camera_type"
+                id="camera_type"
+                class="form-control"
+                required>
+
+                <option value="ip">
+                    IP Camera
+                </option>
+
+                <option value="usb">
+                    USB Camera
+                </option>
+
+            </select>
+        </div>
+
+       <div class="form-group mb-3">
+    <label>Source</label>
+
+    <input
+        name="source"
+        id="source"
+        type="text"
+        class="form-control"
+        placeholder="192.168.1.5:8080 or 0"
+        required>
+
+    <small id="sourceHint" class="text-muted">
+        IP format: 192.168.1.5:8080
+    </small>
+</div>
+
+        <button
+            type="submit"
+            class="btn btn-primary">
+
+            Add Camera
+
+        </button>
+
+    </form>
+
+
+
+</div>
+
+<script>
+
+const cameraType = document.getElementById("camera_type");
+const sourceInput = document.getElementById("source");
+const sourceHint = document.getElementById("sourceHint");
+
+function validateSource() {
+
+    const value = sourceInput.value;
+
+    if (cameraType.value === "usb") {
+
+        sourceInput.value = value.replace(/[^0-9]/g, '');
+
+        sourceHint.innerText =
+            "USB cameras only allow numbers like: 0, 1, 2";
+
+        if (/^\d+$/.test(sourceInput.value)) {
+
+            sourceInput.setCustomValidity("");
+
+        } else {
+
+            sourceInput.setCustomValidity(
+                "USB cameras only allow numbers"
+            );
+        }
+
+    } else {
+
+        sourceInput.value = value.replace(/[^0-9.:]/g, '');
+
+        sourceHint.innerText =
+            "IP format: 192.168.1.5:8080";
+
+        const ipPattern =
+            /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}:(\d{2,5})$/;
+
+        if (
+            sourceInput.value === "" ||
+            ipPattern.test(sourceInput.value)
+        ) {
+
+            sourceInput.setCustomValidity("");
+
+        } else {
+
+            sourceInput.setCustomValidity(
+                "Invalid IP format. Example: 192.168.1.5:8080"
+            );
+        }
+    }
+}
+
+cameraType.addEventListener("change", function () {
+
+    sourceInput.value = "";
+    validateSource();
+
+});
+
+sourceInput.addEventListener("input", validateSource);
+
+cameraType.dispatchEvent(new Event("change"));
+
+</script>
+
+
+{% endblock %}

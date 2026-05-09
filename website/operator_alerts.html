@@ -2,11 +2,13 @@
 
 {% block content %}
 
+
+
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
 
-    <h4 style="margin:0;">Alerts</h4>
-
-
+    <h4 style="margin:0;">
+        Alerts
+    </h4>
 
     <button class="clear-btn" onclick="clearAlerts()">
         Clear All
@@ -19,54 +21,134 @@
 <div class="no-alerts">
     No alerts yet
 </div>
+
 {% endif %}
 
 <div class="alerts-container">
 
-
     {% for a in alerts %}
+
     <div class="alert-card">
 
-        <div class="alert-badge">ALERT</div>
+        {% if a[2] == 'Low' %}
 
-        <img class="alert-img" src="/snapshot/{{ a[2].split('/')[-1] }}">
+        <div class="alert-badge low-badge">
+            LOW
+        </div>
+
+        {% elif a[2] == 'Medium' %}
+
+        <div class="alert-badge medium-badge">
+            MEDIUM
+        </div>
+
+        {% else %}
+
+        <div class="alert-badge high-badge">
+            HIGH
+        </div>
+
+        {% endif %}
+
+        <img
+            class="alert-img"
+            src="/snapshot/{{ a[5].split('/')[-1] }}">
 
         <div class="alert-content">
+
             <div class="alert-reason">
-                {{ a[4] }}
+                {{ a[7] }}
             </div>
 
             <div class="alert-time">
-                {{ a[6] }}
+               {{ a[10] }} - {{ a[9] }}
             </div>
-            <br>
-                 <button class="fp-btn" onclick="falsePositive('{{ a[0] }}')">
-            Make as false positive
-        </button>
+
+            <div class="alert-actions">
+
+                <button
+                    class="fp-btn"
+                    onclick="falsePositive('{{ a[0] }}', '{{ a[2] }}')">
+
+                    Make as false positive
+
+                </button>
+
+             
+
+                <a
+                    class="video-btn"
+                  href="/clips/{{ a[6].split('/')[-1] }}"
+                    target="_blank">
+
+                    🎥
+
+                </a>
+
+            
+            </div>
+
         </div>
-   
 
     </div>
-    {% endfor %}
 
+    {% endfor %}
 
 </div>
 
 <script>
-    function clearAlerts() {
-        if (!confirm("Delete all alerts?")) return;
 
-        fetch("/clear_alerts", { method: "POST" })
+function clearAlerts() {
+
+    showConfirmModal(
+        "Are you sure you want to clear all alerts?",
+        function () {
+
+            fetch("/clear_alerts", {
+                method: "POST"
+            })
+
             .then(() => location.reload());
-    }
-    function falsePositive(alert_id) {
-        if (!confirm("Mark as false positive, send sms to security field and delete alert?")) return;
 
-        fetch("/false_positive", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ alert_id: alert_id })
-        }).then(() => location.reload());
+        }
+    );
+
+}
+
+function falsePositive(alert_id, threat_level) {
+
+    let message = "";
+
+    if (threat_level === "High") {
+        message = "Mark as false positive, send SMS to security officer, and delete alert?";
+    } else {
+        message = "Mark as false positive and delete alert?";
     }
+
+    showConfirmModal(
+        message,
+        function () {
+
+            fetch("/false_positive", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    alert_id: alert_id
+                })
+            })
+
+            .then(() => location.reload());
+
+        }
+    );
+
+}
+
+
+
+
 </script>
+
 {% endblock %}

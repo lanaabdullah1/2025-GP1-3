@@ -5,6 +5,27 @@ import cv2
 from flask import flash
 from flask import send_file
 import os
+import re
+import socket
+
+
+def is_valid_camera_source(source, camera_type):
+
+    source = source.strip()
+
+    if camera_type == "ip":
+
+        pattern = r"^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}:(\d{2,5})$"
+
+        return re.match(pattern, source) is not None
+
+    if camera_type == "usb":
+
+        return source.isdigit()
+
+    return False
+
+
 
 def register_routes(app):
 
@@ -17,7 +38,7 @@ def register_routes(app):
             return redirect(url_for("users_list"))
 
         if is_operator():
-            return redirect(url_for("operator_monitoring"))
+            return redirect(url_for("operator_monitoring_default"))
 
         if is_field():
             return redirect(url_for("field_alerts"))
@@ -30,15 +51,19 @@ def register_routes(app):
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
-        if is_login():
-            return redirect(url_for("index"))
-
         role = request.args.get("role", "")
 
         if request.method == "GET":
             return render_template("login.html", role=role)
 
         email = request.form.get("email")
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+
+        if not re.fullmatch(email_pattern, email):
+            return redirect(url_for("login", role=role))
+            
+
+
         password = request.form.get("password")
 
         user = verify_user(email, password,role)
@@ -83,10 +108,22 @@ def register_routes(app):
 
         name = request.form.get("name")
         email = request.form.get("email")
+
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+
+        if not re.fullmatch(email_pattern, email):
+            return redirect(url_for("user_add"))
+
+
+
         password = request.form.get("password")
         re_password = request.form.get("re_password")
         role = request.form.get("role")
         phone = request.form.get("phone") or None
+
+        if role == "Security Field":
+            password = "FIELD_OFFICER_NO_LOGIN_123!"
+            re_password = password
 
         if password != re_password:
             return render_template(
@@ -103,7 +140,7 @@ def register_routes(app):
         if not success:
             return render_template(
                 "user_add.html",
-                error="Email already exists",
+                error="Email or phone number already exists",
                 name=name,
                 email=email,
                 role=role,
@@ -111,6 +148,9 @@ def register_routes(app):
             )
 
         return render_template("user_add.html", success="User added successfully")
+        
+
+
 
 
     @app.route("/user_update/<int:user_id>", methods=["GET", "POST"])
@@ -129,10 +169,21 @@ def register_routes(app):
 
         name = request.form.get("name")
         email = request.form.get("email")
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+        if not re.fullmatch(email_pattern, email):
+            return redirect(url_for("user_update", user_id=user_id))
+                
+
+
+
         phone = request.form.get("phone") or None
         password = request.form.get("password")
 
-        # optional: check if email already belongs to another user
+        if user[4] == "Security Field":
+            role = request.form.get("role")
+        else:
+            role = user[4]
+
         existing_user = get_user_by_email(email)
         if existing_user and existing_user[0] != user_id:
             return render_template(
@@ -141,8 +192,7 @@ def register_routes(app):
                 error="Email already exists"
             )
 
-        update_user(user_id, name, email, phone)
-
+        update_user(user_id, name, email, phone, role)
         if password and password.strip():
             update_password(user_id, password)
 
@@ -173,16 +223,29 @@ def register_routes(app):
         if request.method == "GET":
             return render_template("update_password.html")
 
+        old_password = request.form.get("old_password")
+
         password = request.form.get("password")
+
         re_password = request.form.get("re_password")
 
+        user_id = get_user_id()
+
+        user = get_user_by_id(user_id)
+
+        if user[3] != hash_password(old_password):
+
+            return render_template(
+                "update_password.html",
+                error="Current password is incorrect"
+            )
+
         if password != re_password:
+
             return render_template(
                 "update_password.html",
                 error="Password not match"
             )
-
-        user_id = get_user_id()
 
         update_password(user_id, password)
 
@@ -190,7 +253,7 @@ def register_routes(app):
             "update_password.html",
             success="Password updated successfully"
         )
-
+    
     @app.route("/update_profile", methods=["GET", "POST"])
     def update_profile_route():
 
@@ -205,23 +268,74 @@ def register_routes(app):
 
         data = {}
 
-        if request.form.get("name"):
-            data["name"] = request.form.get("name")
+        if is_operator():
+            phone = request.form.get("phone")
+            update_profile(user_id, {"phone": phone})
+            return render_template(
+                "update_profile.html",
+                user=get_user_by_id(user_id),
+                success="Profile updated successfully"
+            )
+        name = request.form.get("name")
+        if name is not None:
+            data["name"] = name.strip()
 
-        if request.form.get("email"):
-            data["email"] = request.form.get("email")
+        email = request.form.get("email")
+        if email is not None:
+            email = email.strip()
 
-        if request.form.get("phone"):
-            data["phone"] = request.form.get("phone")
+            email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
 
-        if data:
-            update_profile(user_id, data)
+            if not re.fullmatch(email_pattern, email):
+                return render_template(
+                    "update_profile.html",
+                    user=user,
+                    error="Email must contain _eyecept before @ like: ali_eyecept@gmail.com"
+                )
 
-        return render_template(
-            "update_profile.html",
-            user=get_user_by_id(user_id),
-            success="Profile updated successfully"
-        )
+            existing_user = get_user_by_email(email)
+            if existing_user and existing_user[0] != user_id:
+                return render_template(
+                    "update_profile.html",
+                    user=user,
+                    error="Email already exists"
+                )
+
+            data["email"] = email
+
+        
+        phone = request.form.get("phone")
+        if phone is not None:
+            phone = phone.strip()
+            data["phone"] = phone if phone else None
+
+        try:
+            if data:
+                update_profile(user_id, data)
+
+            updated_user = get_user_by_id(user_id)
+
+            set_user_name(updated_user[1])
+            set_role(updated_user[4])
+
+            return render_template(
+                "update_profile.html",
+                user=updated_user,
+                success="Profile updated successfully"
+            )
+
+        except Exception as e:
+            print(type(e).__name__, e)
+            return render_template(
+                "update_profile.html",
+                user=user,
+                error="Phone number or email already exists"
+            )
+
+
+
+
+
 
     @app.route("/forgot_password", methods=["GET", "POST"])
     def forgot_password():
@@ -229,6 +343,13 @@ def register_routes(app):
             return render_template("forgot_password.html")
 
         email = request.form.get("email")
+
+        email_pattern = email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+
+        if not re.fullmatch(email_pattern, email):
+            return redirect(url_for("forgot_password"))
+            
+
         user = get_user_by_email(email)
 
         if not user:
@@ -297,19 +418,79 @@ def register_routes(app):
     # =========================
 
     @app.route("/operator_monitoring")
-    def operator_monitoring():
+    def operator_monitoring_default():
+
         if not is_login() or not is_operator():
             return redirect(url_for("login"))
 
-        alerts = get_alerts()
-        return render_template("operator_monitoring.html", alerts=alerts)
-    
+        cameras = get_all_active_cameras()
+
+        if not cameras:
+            return render_template(
+                "operator_monitoring.html",
+                cameras=[],
+                camera=None
+            )
+
+        return redirect(url_for(
+            "operator_monitoring",
+            camera_id=cameras[0][0]
+        ))
+        
+    @app.route("/operator_monitoring/<int:camera_id>")
+    def operator_monitoring(camera_id):
+
+        if not is_login() or not is_operator():
+            return redirect(url_for("login"))
+
+        cameras = get_all_active_cameras()
+
+        camera = get_camera_by_id(camera_id)
+
+        if not camera:
+            return redirect(url_for(
+                "operator_monitoring",
+                camera_id=cameras[0][0]
+            ))
+
+        return render_template(
+            "operator_monitoring.html",
+            cameras=cameras,
+            camera=camera
+        )        
+        
+    @app.route("/video_feed/<int:camera_id>")
+    def video_feed(camera_id):
+
+        camera = get_camera_by_id(camera_id)
+
+        if not camera:
+            return "Camera not found"
+
+        source = camera[2]
+        camera_type = camera[3]
+
+        if camera_type == "ip":
+            if not source.startswith("http"):
+                source = "http://" + source
+
+            source += "/video"
+
+        else:
+            source = int(source)
+
+        return Response(
+            generate_frames(source, camera_id),
+            mimetype='multipart/x-mixed-replace; boundary=frame'
+        )        
+
     @app.route("/operator_alerts")
     def operator_alerts():
         if not is_login() or not is_operator():
             return redirect(url_for("login"))
 
         alerts = get_alerts()
+        
 
         return render_template("operator_alerts.html", alerts=alerts)
 
@@ -372,29 +553,7 @@ def register_routes(app):
         return {"status": "ok"}
 
 
-    @app.route("/video_feed")
-    def video_feed():
-        source = get_camera()
 
-        if not source:
-            return "No camera selected"
-
-        return Response(
-            generate_frames(source),
-            mimetype='multipart/x-mixed-replace; boundary=frame'
-        )
-
-
-    @app.route("/camera_status")
-    def camera_status():
-        source = get_camera()
-
-        cap = cv2.VideoCapture(source)
-        ok, _ = cap.read()
-        cap.release()
-
-        return {"status": "ok" if ok else "fail"}
-    
     @app.route("/set_roi", methods=["POST"])
     def set_roi_route():
         data = request.json
@@ -432,6 +591,15 @@ def register_routes(app):
                     os.remove(os.path.join(folder, f))
                 except:
                     pass
+                
+        folder = "clips"
+
+        if os.path.exists(folder):
+            for f in os.listdir(folder):
+                try:
+                    os.remove(os.path.join(folder, f))
+                except:
+                    pass                
 
         return {"status": "cleared"}
     
@@ -453,8 +621,188 @@ def register_routes(app):
                 #send_sms(phone, "⚠ False alarm")
                 log_sms(alert_id, user_id, "False alarm")
 
-        delete_alert(alert_id)
+        mark_false_positive(alert_id)
         if image_path and os.path.exists(image_path):
          os.remove(image_path)
 
         return {"status": "ok"}
+    
+    @app.route("/cameras_list")
+    def cameras_list():
+
+        if not is_login() or not is_admin():
+            return redirect(url_for("login"))
+
+        cameras = get_all_cameras()
+
+        return render_template(
+            "cameras_list.html",
+            cameras=cameras
+        )    
+        
+    @app.route("/camera_add", methods=["GET", "POST"])
+    def camera_add():
+
+        if not is_login() or not is_admin():
+            return redirect(url_for("login"))
+
+        if request.method == "GET":
+            return render_template("camera_add.html")
+
+        name = request.form.get("name")
+        source = request.form.get("source")
+        camera_type = request.form.get("camera_type")
+
+
+        if not is_valid_camera_source(source, camera_type):
+            return render_template(
+                "camera_add.html",
+                error="Invalid source. IP cameras must be in this format: 192.168.1.5:8080. USB cameras must be a number."
+            )
+
+        create_camera(
+            name,
+            source,
+            camera_type
+        )
+
+        return render_template(
+            "camera_add.html",
+            success="Camera added successfully"
+        )        
+        
+    @app.route("/camera_update/<int:camera_id>", methods=["GET", "POST"])
+    def camera_update(camera_id):
+
+        if not is_login() or not is_admin():
+            return redirect(url_for("login"))
+
+        camera = get_camera_by_id(camera_id)
+
+        if not camera:
+            return redirect(url_for("cameras_list"))
+
+        if request.method == "GET":
+            return render_template(
+                "camera_update.html",
+                camera=camera
+            )
+
+        name = request.form.get("name")
+        source = request.form.get("source")
+        camera_type = request.form.get("camera_type")
+        status = request.form.get("status")
+        is_active = request.form.get("is_active")
+
+        if not is_valid_camera_source(source, camera_type):
+            return render_template(
+                "camera_update.html",
+                camera=camera,
+                error="Invalid source. IP cameras must be in this format: 192.168.1.5:8080. USB cameras must be a number."
+            )
+
+        update_camera(
+            camera_id,
+            name,
+            source,
+            camera_type,
+            status,
+            is_active
+        )
+
+        return render_template(
+            "camera_update.html",
+            camera=get_camera_by_id(camera_id),
+            success="Camera updated successfully"
+        )        
+        
+        
+    @app.route("/camera_delete/<int:camera_id>")
+    def camera_delete(camera_id):
+
+        if not is_login() or not is_admin():
+            return redirect(url_for("login"))
+
+        delete_camera(camera_id)
+
+        return redirect(url_for("cameras_list"))        
+    
+   
+    @app.route("/camera_status/<int:camera_id>")
+    def camera_status(camera_id):
+
+        camera = get_camera_by_id(camera_id)
+
+        if not camera:
+            return {"status": "fail"}
+
+        source = camera[2]
+        camera_type = camera[3]
+        is_active = camera[5]
+
+        if is_active == 0:
+            return {"status": "disabled"}
+
+        try:
+            if camera_type == "ip":
+
+                ip, port = source.split(":")
+                port = int(port)
+
+                # Fast check: is the phone camera app reachable?
+                try:
+                    socket.create_connection((ip, port), timeout=1).close()
+                except:
+                    return {"status": "fail"}
+
+                video_source = "http://" + source + "/video"
+
+            else:
+                video_source = int(source)
+
+            cap = cv2.VideoCapture(video_source)
+            ok, frame = cap.read()
+            cap.release()
+
+            if ok and frame is not None:
+                return {"status": "ok"}
+
+            return {"status": "fail"}
+
+        except:
+            return {"status": "fail"}
+
+
+
+    @app.route("/latest_alert")
+    def latest_alert():
+
+        if not is_login():
+            return {"status": "fail"}
+
+        alert = get_latest_alert()
+
+        if not alert:
+            return {"status": "empty"}
+
+        return {
+            "status": "ok",
+            "id": alert[0],
+            "level": alert[1],
+            "threat_level": alert[2],
+            "snapshot": alert[5],
+            "reason": alert[7]
+        }        
+        
+    @app.route("/clips/<path:filename>")
+    def get_clip(filename):
+
+        path = os.path.join(
+            "clips",
+            filename
+        )
+
+        return send_file(
+            path,
+            mimetype="video/x-msvideo"
+        )

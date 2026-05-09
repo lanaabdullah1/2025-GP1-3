@@ -29,7 +29,7 @@
                             User Type <span class="text-danger">*</span>
                         </label>
 
-                        <select name="role" class="form-control" required>
+                        <select name="role"  id="role" class="form-control" required>
                             <option value="" disabled selected>Select type</option>
 
                             <option value="Security Operator" {% if role=="Security Operator" %}selected{% endif %}>
@@ -56,32 +56,60 @@
                     </div>
                 </div>
 
-                <!-- EMAIL -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>
-                            Email <span class="text-danger">*</span>
-                        </label>
+                    <!-- EMAIL -->
+<div class="col-md-6">
+    <div class="form-group">
+        <label>
+            Email <span class="text-danger">*</span>
+        </label>
 
-                        <input value="{{ email or '' }}" type="email" name="email" class="form-control"
-                            placeholder="Email Address" required>
-                    </div>
-                </div>
+        <input type="text"
+               name="email"
+               class="form-control"
+               placeholder="Email Address"
+               required
+               value="{{ email or '' }}"
 
-                <!-- PASSWORD -->
+               oninvalid="
+                    if (this.value.trim() === '') {
+                        this.setCustomValidity('Please fill out this field.');
+                    } else {
+                        this.setCustomValidity('Email must contain .eyecept before @ like: ali.eyecept@gmail.com');
+                    }
+               "
+
+               oninput="
+                    const pattern = /^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+
+                    if (this.value.trim() === '') {
+                        this.setCustomValidity('Please fill out this field.');
+                    }
+                    else if (!pattern.test(this.value)) {
+                        this.setCustomValidity('Email must contain .eyecept before @ like: ali.eyecept@gmail.com');
+                    }
+                    else {
+                        this.setCustomValidity('');
+                    }
+               ">
+    </div>
+</div>
+
+
+
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>
                             Password <span class="text-danger">*</span>
                         </label>
 
-                        <input name="password" type="password" class="form-control"
-                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}" required
+                        <input name="password" id="password" type="password" class="form-control"
+                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}"
+                            required
                             title="Password must be at least 8 characters, include uppercase, lowercase, number, and special character">
+
                     </div>
                 </div>
 
-                <!-- CONFIRM -->
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>
@@ -89,23 +117,51 @@
                         </label>
 
 
-                        <input name="re_password" type=" password" class="form-control"
-                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}" required
+                        <input name="re_password" id="re_password" type="password" class="form-control"
+                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}"
+                            required
                             title="Password must be at least 8 characters, include uppercase, lowercase, number, and special character">
                     </div>
                 </div>
 
-                <!-- PHONE (OPTIONAL) -->
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>
-                            Phone
+                       <label>
+                            Phone <span class="text-danger">*</span>
+                        
                         </label>
+                        <input
+                            name="phone"
+                            type="text"
+                            class="form-control"
+                            pattern="05[0-9]{8}"
+                            maxlength="10"
+                            inputmode="numeric"
+                            required
 
-                        <input name="phone" type="text" class="form-control" pattern="05[0-9]{8}" minlength="10"
-                            maxlength="10" inputmode="numeric" required
-                            oninvalid="this.setCustomValidity('Phone number must start with 05 and be exactly 10 digits')"
-                            oninput="if (/\D/g.test(this.value)) this.value = this.value.replace(/\D/g,'')">
+                            oninvalid="
+                                if (this.value.trim() === '') {
+                                    this.setCustomValidity('');
+                                } else {
+                                    this.setCustomValidity('Phone number must start with 05 and be exactly 10 digits');
+                                }
+                            "
+
+                            oninput="
+                                this.value = this.value.replace(/\D/g,'');
+
+                                if (this.value.trim() === '') {
+                                    this.setCustomValidity('');
+                                }
+                                else if (!/^05[0-9]{8}$/.test(this.value)) {
+                                    this.setCustomValidity('Phone number must start with 05 and be exactly 10 digits');
+                                }
+                                else {
+                                    this.setCustomValidity('');
+                                }
+                            "
+                        >
+                      
                     </div>
                 </div>
 
@@ -122,5 +178,34 @@
         </form>
     </div>
 </div>
+
+
+<script>
+const roleSelect = document.getElementById("role");
+const passwordInput = document.getElementById("password");
+const confirmPasswordInput = document.getElementById("re_password");
+
+function handlePasswordLock() {
+    if (roleSelect.value === "Security Field") {
+        passwordInput.value = "";
+        confirmPasswordInput.value = "";
+
+        passwordInput.disabled = true;
+        confirmPasswordInput.disabled = true;
+
+        passwordInput.required = false;
+        confirmPasswordInput.required = false;
+    } else {
+        passwordInput.disabled = false;
+        confirmPasswordInput.disabled = false;
+
+        passwordInput.required = true;
+        confirmPasswordInput.required = true;
+    }
+}
+
+roleSelect.addEventListener("change", handlePasswordLock);
+handlePasswordLock();
+</script>
 
 {% endblock %}
