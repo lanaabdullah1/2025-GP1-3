@@ -384,8 +384,43 @@ def register_routes(app):
             return "+" + phone
 
         return phone
+
+
+
     @app.route("/verify_code/<int:user_id>", methods=["GET", "POST"])
     def verify_code(user_id):
+
+        if request.method == "GET":
+            return render_template(
+                "verify_code.html",
+                user_id=user_id
+            )
+
+        code = request.form.get("code")
+
+        data = get_reset_code(user_id, code)
+
+        if not data:
+            return render_template(
+                "verify_code.html",
+                user_id=user_id,
+                error="Invalid code"
+            )
+
+        if float(data[3]) < datetime.utcnow().timestamp():
+            return render_template(
+                "verify_code.html",
+                user_id=user_id,
+                error="Code expired"
+            )
+
+        return redirect(url_for("new_password", user_id=user_id))    
+
+
+    
+
+
+
         if request.method == "GET":
             return render_template("verify_code.html")
 
