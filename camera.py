@@ -2,8 +2,7 @@ import cv2
 import time
 import os
 import threading
-from ultralytics import YOLO
-import mediapipe as mp
+
 
 from model.query import (
     create_alert,
@@ -25,24 +24,7 @@ last_alert_time = {}
 
 ALERT_COOLDOWN = 15
 
-frame_counter = 0
 
-last_person_boxes = []
-
-last_hand_landmarks = None
-
-yolo_model = YOLO("yolov8n.pt")
-
-mp_hands = mp.solutions.hands
-
-hands = mp_hands.Hands(
-    static_image_mode=False,
-    max_num_hands=1,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
-
-mp_draw = mp.solutions.drawing_utils
 
 
 def set_roi(x1, y1, x2, y2):
@@ -124,9 +106,6 @@ def generate_frames(source, camera_id=1):
     global roi
     global roi_version
     global stream_id
-    global frame_counter
-    global last_person_boxes
-    global last_hand_landmarks
 
     cap = cv2.VideoCapture(source)
 
@@ -140,6 +119,8 @@ def generate_frames(source, camera_id=1):
 
     local_stream = stream_id
 
+    
+
     while True:
 
         if local_stream != stream_id:
@@ -150,94 +131,20 @@ def generate_frames(source, camera_id=1):
         if not success:
             break
 
-        frame_counter += 1
+        
+
+       
+
+      
 
         frame = cv2.resize(
             frame,
             (480, 270)
         )
 
-        if frame_counter % 10 == 0:
-
-            last_person_boxes = []
-
-            results = yolo_model(
-                frame,
-                imgsz=320,
-                verbose=False
-            )
-
-            for result in results:
-
-                for box in result.boxes:
-
-                    cls = int(box.cls[0])
-
-                    if cls != 0:
-                        continue
-
-                    conf = float(box.conf[0])
-
-                    if conf < 0.65:
-                        continue
-
-                    x1, y1, x2, y2 = map(
-                        int,
-                        box.xyxy[0]
-                    )
-
-                    last_person_boxes.append(
-                        (
-                            x1,
-                            y1,
-                            x2,
-                            y2,
-                            conf
-                        )
-                    )
-
-            rgb = cv2.cvtColor(
-                frame,
-                cv2.COLOR_BGR2RGB
-            )
-
-            hand_results = hands.process(rgb)
-
-            last_hand_landmarks = (
-                hand_results.multi_hand_landmarks
-            )
-
-        for person in last_person_boxes:
-
-            x1, y1, x2, y2, conf = person
-
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (255, 0, 0),
-                2
-            )
-
-            cv2.putText(
-                frame,
-                f"Person {conf:.2f}",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (255, 0, 0),
-                2
-            )
-
-        if last_hand_landmarks:
-
-            for hand_landmarks in last_hand_landmarks:
-
-                mp_draw.draw_landmarks(
-                    frame,
-                    hand_landmarks,
-                    mp_hands.HAND_CONNECTIONS
-                )
+     
+       
+       
 
         if local_version != roi_version:
 
@@ -351,6 +258,8 @@ def generate_frames(source, camera_id=1):
                     if now - last_time < ALERT_COOLDOWN:
                         continue
 
+                   
+
                     last_alert_time[camera_id] = now
 
                     timestamp = int(time.time())
@@ -363,10 +272,16 @@ def generate_frames(source, camera_id=1):
                         f"clips/{timestamp}.avi"
                     )
 
+                   
+
                     cv2.imwrite(
                         filename,
                         frame
                     )
+
+                    
+
+            
 
                     threading.Thread(
                         target=record_clip,
@@ -385,6 +300,8 @@ def generate_frames(source, camera_id=1):
                         reason=reason,
                         camera_id=camera_id
                     )
+
+                   
 
                     users = get_security_fields()
 
@@ -411,6 +328,8 @@ def generate_frames(source, camera_id=1):
         )
 
         frame = buffer.tobytes()
+
+       
 
         yield (
             b'--frame\r\n'
