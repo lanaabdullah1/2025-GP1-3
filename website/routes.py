@@ -7,6 +7,7 @@ from flask import send_file
 import os
 import re
 import socket
+import time
 
 
 def is_valid_camera_source(source, camera_type):
@@ -57,7 +58,7 @@ def register_routes(app):
             return render_template("login.html", role=role)
 
         email = request.form.get("email")
-        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@(gmail|outlook|hotmail|yahoo)\.(com|net)$"
 
         if not re.fullmatch(email_pattern, email):
             return redirect(url_for("login", role=role))
@@ -104,12 +105,15 @@ def register_routes(app):
             return redirect(url_for("login"))
 
         if request.method == "GET":
-            return render_template("user_add.html")
+              return render_template(
+                    "user_add.html",
+                    user=get_user_by_id(get_user_id())
+                )
 
         name = request.form.get("name")
         email = request.form.get("email")
 
-        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@(gmail|outlook|hotmail|yahoo)\.(com|net)$"
 
         if not re.fullmatch(email_pattern, email):
             return redirect(url_for("user_add"))
@@ -121,6 +125,20 @@ def register_routes(app):
         role = request.form.get("role")
         phone = request.form.get("phone") or None
 
+        if phone:
+            existing_phone = get_user_by_phone(phone)
+            if existing_phone:
+                return render_template(
+                    "user_add.html",
+                    error="Phone number already exists",
+                    name=name,
+                    email=email,
+                    form_role=role,
+                    phone=phone,
+                )
+
+
+
         if role == "Security Field":
             password = "FIELD_OFFICER_NO_LOGIN_123!"
             re_password = password
@@ -131,7 +149,7 @@ def register_routes(app):
                 error="Password not match",
                 name=name,
                 email=email,
-                role=role,
+                form_role=role,
                 phone=phone,
             )
 
@@ -143,7 +161,7 @@ def register_routes(app):
                 error="Email or phone number already exists",
                 name=name,
                 email=email,
-                role=role,
+                form_role=role,
                 phone=phone,
             )
 
@@ -169,7 +187,7 @@ def register_routes(app):
 
         name = request.form.get("name")
         email = request.form.get("email")
-        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@(gmail|outlook|hotmail|yahoo)\.(com|net)$"
         if not re.fullmatch(email_pattern, email):
             return redirect(url_for("user_update", user_id=user_id))
                 
@@ -177,6 +195,15 @@ def register_routes(app):
 
 
         phone = request.form.get("phone") or None
+
+        if phone:
+            existing_phone = get_user_by_phone(phone)
+            if existing_phone and existing_phone[0] != user_id:
+                return render_template(
+                    "user_update.html",
+                    user=user,
+                    error="Phone number already exists"
+                )
         password = request.form.get("password")
 
         if user[4] == "Security Field":
@@ -269,13 +296,31 @@ def register_routes(app):
         data = {}
 
         if is_operator():
-            phone = request.form.get("phone")
+
+            phone = request.form.get("phone") or None
+
+            if phone:
+
+                existing_phone = get_user_by_phone(phone)
+
+                if existing_phone and existing_phone[0] != user_id:
+
+                    return render_template(
+                        "update_profile.html",
+                        user=user,
+                        error="Phone number already exists"
+                    )
+
             update_profile(user_id, {"phone": phone})
+
             return render_template(
                 "update_profile.html",
                 user=get_user_by_id(user_id),
                 success="Profile updated successfully"
             )
+
+
+
         name = request.form.get("name")
         if name is not None:
             data["name"] = name.strip()
@@ -284,7 +329,7 @@ def register_routes(app):
         if email is not None:
             email = email.strip()
 
-            email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+            email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@(gmail|outlook|hotmail|yahoo)\.(com|net)$"
 
             if not re.fullmatch(email_pattern, email):
                 return render_template(
@@ -301,6 +346,19 @@ def register_routes(app):
                     error="Email already exists"
                 )
 
+
+
+            existing_user = get_user_by_email(email)
+
+            if existing_user and existing_user[0] != user_id:
+                return render_template(
+                    "update_profile.html",
+                    user=user,
+                    error="Email already exists"
+                )
+
+            data["email"] = email
+
             data["email"] = email
 
         
@@ -308,6 +366,15 @@ def register_routes(app):
         if phone is not None:
             phone = phone.strip()
             data["phone"] = phone if phone else None
+
+        if phone:
+            existing_phone = get_user_by_phone(phone)
+            if existing_phone and existing_phone[0] != user_id:
+                return render_template(
+                    "update_profile.html",
+                    user=user,
+                    error="Phone number already exists"
+                )    
 
         try:
             if data:
@@ -344,7 +411,7 @@ def register_routes(app):
 
         email = request.form.get("email")
 
-        email_pattern = email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$"
+        email_pattern = r"^(?!.*\.\.)[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*\.eyecept@(gmail|outlook|hotmail|yahoo)\.(com|net)$"
 
         if not re.fullmatch(email_pattern, email):
             return redirect(url_for("forgot_password"))
@@ -460,39 +527,14 @@ def register_routes(app):
 
         cameras = get_all_active_cameras()
 
-        if not cameras:
-            return render_template(
-                "operator_monitoring.html",
-                cameras=[],
-                camera=None
-            )
-
-        return redirect(url_for(
-            "operator_monitoring",
-            camera_id=cameras[0][0]
-        ))
-        
-    @app.route("/operator_monitoring/<int:camera_id>")
-    def operator_monitoring(camera_id):
-
-        if not is_login() or not is_operator():
-            return redirect(url_for("login"))
-
-        cameras = get_all_active_cameras()
-
-        camera = get_camera_by_id(camera_id)
-
-        if not camera:
-            return redirect(url_for(
-                "operator_monitoring",
-                camera_id=cameras[0][0]
-            ))
-
         return render_template(
             "operator_monitoring.html",
-            cameras=cameras,
-            camera=camera
-        )        
+            cameras=cameras
+        )
+
+
+
+
         
     @app.route("/video_feed/<int:camera_id>")
     def video_feed(camera_id):
@@ -560,7 +602,7 @@ def register_routes(app):
         reset_password(token, request.form.get("password"))
         return redirect(url_for("login"))
         
-    from camera import generate_frames, set_roi
+    from camera import generate_frames, set_roi, camera_last_frame_time
     from flask import render_template, request, redirect, url_for, Response, jsonify
     @app.route("/set_camera", methods=["POST"])
     def set_camera_route():
@@ -591,15 +633,35 @@ def register_routes(app):
 
     @app.route("/set_roi", methods=["POST"])
     def set_roi_route():
+
         data = request.json
-        set_roi(data["x1"], data["y1"], data["x2"], data["y2"])
+
+        set_roi(
+            data["x1"],
+            data["y1"],
+            data["x2"],
+            data["y2"],
+            int(data["camera_id"])
+        )
+
         return {"status": "ok"}
 
+
+
     import camera
+
     @app.route("/reset_roi", methods=["POST"])
     def reset_roi_route():
-        camera.reset_roi()
+
+        data = request.json
+
+        camera.reset_roi(
+            int(data["camera_id"])
+        )
+
         return {"status": "ok"}
+
+    
 
     @app.route("/snapshot/<path:filename>")
     def get_snapshot(filename):
@@ -695,11 +757,30 @@ def register_routes(app):
                 error="Invalid source. IP cameras must be in this format: 192.168.1.5:8080. USB cameras must be a number."
             )
 
+
+        existing_camera_name = get_camera_by_name(name)
+
+        if existing_camera_name:
+            return render_template(
+                "camera_add.html",
+                error="Camera name already exists"
+            )
+
+        existing_camera_source = get_camera_by_source(source)
+
+        if existing_camera_source:
+            return render_template(
+                "camera_add.html",
+                error="Camera source already exists"
+            )    
+
         create_camera(
             name,
             source,
             camera_type
         )
+
+        
 
         return render_template(
             "camera_add.html",
@@ -773,6 +854,7 @@ def register_routes(app):
 
         source = camera[2]
         camera_type = camera[3]
+        
         is_active = camera[5]
 
         if is_active == 0:
@@ -784,7 +866,7 @@ def register_routes(app):
                 ip, port = source.split(":")
                 port = int(port)
 
-                # Fast check: is the phone camera app reachable?
+                
                 try:
                     socket.create_connection((ip, port), timeout=1).close()
                 except:
@@ -795,8 +877,21 @@ def register_routes(app):
             else:
                 video_source = int(source)
 
-            cap = cv2.VideoCapture(video_source)
+                
+
+                last_seen = camera_last_frame_time.get(camera_id)
+
+                if last_seen and time.time() - last_seen < 10:
+                    return {"status": "ok"}
+
+
+            if camera_type == "usb":
+                cap = cv2.VideoCapture(video_source, cv2.CAP_DSHOW)
+            else:
+                cap = cv2.VideoCapture(video_source)
+
             ok, frame = cap.read()
+            
             cap.release()
 
             if ok and frame is not None:

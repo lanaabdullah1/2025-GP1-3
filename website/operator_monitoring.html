@@ -12,10 +12,24 @@
     overflow:hidden;
 }
 
-#canvas{
+
+.camera-panel{
+    width:100%;
+    background:#fff;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:18px;
+}
+
+.camera-panel:last-child{
+    margin-bottom:0;
+}
+
+.camera-canvas{
     width:100%;
     display:block;
     border-radius:16px;
+    cursor:crosshair;
 }
 
 .camera-overlay{
@@ -65,106 +79,109 @@
     background:#f39a1f;
 }
 
-.camera-card{
-    width:100%;
-    background:#fff;
-    border-radius:14px;
-    padding:14px;
-    margin-bottom:12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    text-decoration:none;
-    transition:.2s;
-    border:2px solid transparent;
-}
+
 
 .camera-card:hover{
     transform:translateY(-2px);
 }
 
-.active-camera{
-    border-color:#35507a;
-    background:#eef3fb;
-}
 
-.camera-name{
-    font-weight:600;
-    color:#222;
-}
-
-.camera-dot{
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:#17c964;
-}
 
 </style>
 
 <div class="row">
-
-    <div class="col-md-9">
-
+    <div class="col-12">
         <div class="dashboard_property">
 
-            {% if camera %}
+            <h4 class="mb-3">Live Monitoring</h4>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            {% if cameras %}
 
-                <div>
+            <div class="row">
 
-                    <h4 class="mb-0">
-                        {{ camera[1] }}
-                    </h4>
+                {% for c in cameras %}
 
-                    <small class="text-muted">
-                        Live Monitoring
-                    </small>
+                <div class="col-12">
 
-                </div>
+                    <div
+                        class="camera-panel"
+                        data-camera-id="{{ c[0] }}">
 
-                <div class="d-flex gap-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
 
-                    <button
-                        class="camera-btn stop-btn"
-                        onclick="toggleCamera()">
+                            <div>
 
-                        <i id="toggleIcon"
-                           class="fas fa-pause"></i>
+                                <h5 class="mb-0">
+                                    {{ c[1] }}
+                                </h5>
 
-                    </button>
+                                <small class="text-muted">
+                                    {{ c[3]|upper }} · Live Monitoring
+                                </small>
 
-                    <button
-                        class="camera-btn roi-btn"
-                        onclick="resetROI()">
+                            </div>
 
-                        <i class="fas fa-vector-square"></i>
+                            <div class="d-flex gap-2">
 
-                    </button>
+                                <button
+                                    class="camera-btn stop-btn"
+                                    type="button"
+                                    onclick="toggleCamera('{{ c[0] }}')">
 
-                </div>
+                                    <i
+                                        id="toggleIcon-{{ c[0] }}"
+                                        class="fas fa-pause">
+                                    </i>
 
-            </div>
+                                </button>
 
-            <div class="camera-wrapper">
+                                <button
+                                    class="camera-btn roi-btn"
+                                    type="button"
+                                    onclick="resetROI('{{ c[0] }}')">
 
-                <canvas id="canvas"></canvas>
+                                    <i class="fas fa-vector-square"></i>
 
-                <div id="cameraOverlay"
-                     class="camera-overlay"
-                     onclick="toggleCamera()">
+                                </button>
 
-                    <div class="camera-overlay-content">
+                            </div>
 
-                        <i id="overlayIcon"
-                           class="fas fa-play"></i>
+                        </div>
 
-                        <h5 id="overlayText"></h5>
+                        <div class="camera-wrapper">
+
+                            <canvas
+                                id="canvas-{{ c[0] }}"
+                                class="camera-canvas">
+                            </canvas>
+
+                            <div
+                                id="cameraOverlay-{{ c[0] }}"
+                                class="camera-overlay"
+                                onclick="toggleCamera('{{ c[0] }}')">
+
+                                <div class="camera-overlay-content">
+
+                                    <i
+                                        id="overlayIcon-{{ c[0] }}"
+                                        class="fas fa-play">
+                                    </i>
+
+                                    <h5
+                                        id="overlayText-{{ c[0] }}">
+                                    </h5>
+
+                                </div>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
                 </div>
+
+                {% endfor %}
 
             </div>
 
@@ -177,303 +194,436 @@
             {% endif %}
 
         </div>
-
     </div>
-
-    <div class="col-md-3">
-
-        <div class="dashboard_property">
-
-            <h5 class="mb-3">
-                Cameras
-            </h5>
-
-            {% for c in cameras %}
-
-            <a href="/operator_monitoring/{{ c[0] }}"
-               class="camera-card {% if camera and camera[0] == c[0] %}active-camera{% endif %}">
-
-                <div>
-
-                    <div class="camera-name">
-                        {{ c[1] }}
-                    </div>
-
-                    <small class="text-muted">
-                        {{ c[3]|upper }}
-                    </small>
-
-                </div>
-
-                {% if camera and camera[0] == c[0] %}
-
-                <span class="camera-dot"></span>
-
-                {% endif %}
-
-            </a>
-
-            {% endfor %}
-
-        </div>
-
-    </div>
-
 </div>
+
+
 
 <script>
 
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
 
-let img = new Image();
+const cameraInstances = {};
 
-let playing = true;
+document.querySelectorAll(".camera-panel").forEach(panel => {
 
-let startX = 0;
-let startY = 0;
-let endX = 0;
-let endY = 0;
+    const cameraId = panel.dataset.cameraId;
+    const canvas = document.getElementById(`canvas-${cameraId}`);
 
-let drawing = false;
+    cameraInstances[cameraId] = {
+        id: cameraId,
+        canvas: canvas,
+        ctx: canvas.getContext("2d"),
+        img: new Image(),
 
-let cameraLoaded = false;
+        playing: true,
+        drawing: false,
 
-let cameraTimeout;
+        cameraLoaded: false,
+        cameraTimeout: null,
 
-let cameraLoadStart = 0;
+        wasOnline: false,
 
-function loadCamera(){
+        startX: 0,
+        startY: 0,
+        endX: 0,
+        endY: 0
+    };
+});
 
-    cameraLoaded = false;
+function loadCamera(cameraId){
 
-    cameraLoadStart = performance.now();
+    const instance = cameraInstances[cameraId];
 
-    clearTimeout(cameraTimeout);
+    if(!instance)
+        return;
 
-    cameraTimeout = setTimeout(() => {
+    instance.cameraLoaded = false;
 
-        if(!cameraLoaded && playing){
+    clearTimeout(instance.cameraTimeout);
 
-            document.getElementById("cameraOverlay")
-            .style.display = "flex";
+    instance.cameraTimeout = setTimeout(() => {
 
-            document.getElementById("overlayIcon")
-            .className = "fas fa-video-slash";
+        if(!instance.cameraLoaded && instance.playing){
 
-            document.getElementById("overlayText")
-            .innerText =
-            "Camera is offline or not configured properly";
+            showOfflineOverlay(cameraId);
         }
 
     }, 4000);
 
-    img.src = "/video_feed/{{ camera[0] }}?" + Date.now();
+    instance.img.src =
+        "/video_feed/" + cameraId + "?" + Date.now();
 }
 
-loadCamera();
 
 
-let wasOnline = false;
 
-function showOfflineOverlay() {
-    document.getElementById("cameraOverlay").style.display = "flex";
-    document.getElementById("overlayIcon").className = "fas fa-video-slash";
-    document.getElementById("overlayText").innerText =
+
+
+function showOfflineOverlay(cameraId){
+
+    document.getElementById(
+        "cameraOverlay-" + cameraId
+    ).style.display = "flex";
+
+    document.getElementById(
+        "overlayIcon-" + cameraId
+    ).className = "fas fa-video-slash";
+
+    document.getElementById(
+        "overlayText-" + cameraId
+    ).innerText =
         "Camera is offline or not configured properly";
 }
 
-function hideOfflineOverlay() {
-    document.getElementById("cameraOverlay").style.display = "none";
+
+function hideOfflineOverlay(cameraId){
+
+    document.getElementById(
+        "cameraOverlay-" + cameraId
+    ).style.display = "none";
 }
 
-function checkCurrentCameraStatus() {
-    if (!playing) return;
 
-    fetch("/camera_status/{{ camera[0] }}")
-        .then(response => response.json())
-        .then(data => {
+function checkCameraStatus(cameraId){
 
-            if (data.status === "ok") {
+    const instance = cameraInstances[cameraId];
 
-                hideOfflineOverlay();
+    if(!instance || !instance.playing)
+        return;
 
-                if (!wasOnline) {
-                    wasOnline = true;
-                    loadCamera();   // reload stream when camera becomes online
-                }
+    fetch("/camera_status/" + cameraId)
 
-            } else {
+    .then(response => response.json())
 
-                wasOnline = false;
+    .then(data => {
 
-                img.src = "";      // stop old/frozen frame
-                showOfflineOverlay();
+        if(data.status === "ok"){
+
+            hideOfflineOverlay(cameraId);
+
+            if(!instance.wasOnline){
+
+                instance.wasOnline = true;
+
+                loadCamera(cameraId);
             }
-        })
-        .catch(() => {
-            wasOnline = false;
-            img.src = "";
-            showOfflineOverlay();
-        });
+
+        }else{
+
+            instance.wasOnline = false;
+
+            instance.img.src = "";
+
+            showOfflineOverlay(cameraId);
+        }
+
+    })
+
+    .catch(() => {
+
+        instance.wasOnline = false;
+
+        instance.img.src = "";
+
+        showOfflineOverlay(cameraId);
+    });
 }
 
-checkCurrentCameraStatus();
-setInterval(checkCurrentCameraStatus, 5000);
+function checkAllCameraStatuses(){
+
+    Object.keys(cameraInstances).forEach(cameraId => {
+        checkCameraStatus(cameraId);
+    });
+}
 
 
 
-img.onload = function () {
-
-    cameraLoaded = true;
-
-    let cameraLoadEnd = performance.now();
-    let cameraLoadingTime = ((cameraLoadEnd - cameraLoadStart) / 1000).toFixed(2);
-
-    console.log("Camera Loading Time:", cameraLoadingTime + " seconds");
-
-    clearTimeout(cameraTimeout);
-
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-
-    document.getElementById("cameraOverlay")
-    .style.display = "none";
-
-};
-
-img.onerror = function () {
-    cameraLoaded = false;
-    wasOnline = false;
-    showOfflineOverlay();
-};
+setInterval(
+    checkAllCameraStatuses,
+    5000
+);
 
 
-function draw() {
+function getCanvasPoint(instance, event){
 
-    if (
-        img.complete &&
-        img.naturalWidth > 0 &&
-        playing
-    ) {
+    const rect =
+        instance.canvas.getBoundingClientRect();
 
-        ctx.drawImage(
-            img,
-            0,
-            0,
-            canvas.width,
-            canvas.height
+    return {
+        x:
+            (event.clientX - rect.left) *
+            (instance.canvas.width / rect.width),
+
+        y:
+            (event.clientY - rect.top) *
+            (instance.canvas.height / rect.height)
+    };
+}
+
+
+Object.values(cameraInstances).forEach(instance => {
+
+    const cameraId = instance.id;
+
+    instance.img.onload = function(){
+
+        instance.cameraLoaded = true;
+        instance.wasOnline = true;
+
+        clearTimeout(
+            instance.cameraTimeout
         );
 
-        if (drawing) {
+        instance.canvas.width =
+            instance.img.naturalWidth;
 
-            let x = Math.min(startX, endX);
-            let y = Math.min(startY, endY);
+        instance.canvas.height =
+            instance.img.naturalHeight;
 
-            let w = Math.abs(endX - startX);
-            let h = Math.abs(endY - startY);
+        hideOfflineOverlay(cameraId);
+    };
 
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 2;
 
-            ctx.strokeRect(x, y, w, h);
+    instance.img.onerror = function(){
+
+        instance.cameraLoaded = false;
+        instance.wasOnline = false;
+
+        if(instance.playing){
+            showOfflineOverlay(cameraId);
         }
+    };
+
+
+    instance.canvas.addEventListener(
+    "mousedown",
+    (e) => {
+
+        if(!instance.playing)
+            return;
+
+        instance.drawing = true;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.startX = point.x;
+        instance.startY = point.y;
+
+        instance.endX = point.x;
+        instance.endY = point.y;
     }
+);
+
+    instance.canvas.addEventListener(
+    "mousemove",
+    (e) => {
+
+        if(!instance.drawing)
+            return;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.endX = point.x;
+        instance.endY = point.y;
+    }
+);
+
+
+    instance.canvas.addEventListener(
+    "mouseup",
+    (e) => {
+
+        if(!instance.playing)
+            return;
+
+        instance.drawing = false;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.endX = point.x;
+        instance.endY = point.y;
+
+        const x1 =
+            Math.min(
+                instance.startX,
+                instance.endX
+            );
+
+        const y1 =
+            Math.min(
+                instance.startY,
+                instance.endY
+            );
+
+        const x2 =
+            Math.max(
+                instance.startX,
+                instance.endX
+            );
+
+        const y2 =
+            Math.max(
+                instance.startY,
+                instance.endY
+            );
+
+        if(x2 <= x1 || y2 <= y1)
+            return;
+
+        fetch("/set_roi", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                camera_id: cameraId,
+                x1: x1,
+                y1: y1,
+                x2: x2,
+                y2: y2
+            })
+        });
+    }
+);
+
+    instance.canvas.addEventListener(
+    "mouseleave",
+    () => {
+
+        if(!instance.drawing)
+            return;
+
+        instance.drawing = false;
+    }
+);
+
+//loadCamera(cameraId);
+checkCameraStatus(cameraId);
+
+
+});
+
+
+function draw(){
+
+    Object.values(cameraInstances).forEach(instance => {
+
+        if(
+            instance.img.complete &&
+            instance.img.naturalWidth > 0 &&
+            instance.playing
+        ){
+
+            instance.ctx.drawImage(
+                instance.img,
+                0,
+                0,
+                instance.canvas.width,
+                instance.canvas.height
+            );
+
+            if(instance.drawing){
+
+                const x =
+                    Math.min(
+                        instance.startX,
+                        instance.endX
+                    );
+
+                const y =
+                    Math.min(
+                        instance.startY,
+                        instance.endY
+                    );
+
+                const w =
+                    Math.abs(
+                        instance.endX -
+                        instance.startX
+                    );
+
+                const h =
+                    Math.abs(
+                        instance.endY -
+                        instance.startY
+                    );
+
+                instance.ctx.strokeStyle = "red";
+                instance.ctx.lineWidth = 2;
+
+                instance.ctx.strokeRect(
+                    x,
+                    y,
+                    w,
+                    h
+                );
+            }
+        }
+    });
 
     requestAnimationFrame(draw);
 }
 
 draw();
 
-function toggleCamera(){
+function toggleCamera(cameraId){
 
-    let overlay = document.getElementById("cameraOverlay");
+    const instance = cameraInstances[cameraId];
 
-    if(playing){
+    if(!instance)
+        return;
 
-        img.src = "";
+    const overlay =
+        document.getElementById(
+            "cameraOverlay-" + cameraId
+        );
 
-        overlay.style.display = "none";
+    if(instance.playing){
 
-        document.getElementById("overlayIcon")
-        .className = "fas fa-play";
+        instance.img.src = "";
 
-        document.getElementById("overlayText")
-        .innerText = "";
+        overlay.style.display = "flex";
 
-        document.getElementById("toggleIcon")
-        .className = "fas fa-play";
+        document.getElementById(
+            "overlayIcon-" + cameraId
+        ).className = "fas fa-play";
 
-        playing = false;
+        document.getElementById(
+            "overlayText-" + cameraId
+        ).innerText = "";
+
+        document.getElementById(
+            "toggleIcon-" + cameraId
+        ).className = "fas fa-play";
+
+        instance.playing = false;
 
     }else{
 
         overlay.style.display = "none";
 
-        document.getElementById("toggleIcon")
-        .className = "fas fa-pause";
+        document.getElementById(
+            "toggleIcon-" + cameraId
+        ).className = "fas fa-pause";
 
-        playing = true;
+        instance.playing = true;
 
-        loadCamera();
+        instance.wasOnline = false;
+
+        checkCameraStatus(cameraId);
     }
 }
 
-function resetROI() {
+
+function resetROI(cameraId){
 
     fetch("/reset_roi", {
-        method: "POST"
-    }).then(() => {
-
-        drawing = false;
-
-        startX = startY = endX = endY = 0;
-
-        loadCamera();
-
-    });
-}
-
-canvas.addEventListener("mousedown", (e) => {
-
-    if(!playing) return;
-
-    drawing = true;
-
-    startX = e.offsetX;
-    startY = e.offsetY;
-
-});
-
-canvas.addEventListener("mousemove", (e) => {
-
-    if (!drawing) return;
-
-    const rect = canvas.getBoundingClientRect();
-
-    endX = (e.clientX - rect.left) *
-           (canvas.width / rect.width);
-
-    endY = (e.clientY - rect.top) *
-           (canvas.height / rect.height);
-
-});
-
-canvas.addEventListener("mouseup", (e) => {
-
-    if(!playing) return;
-
-    drawing = false;
-
-    const rect = canvas.getBoundingClientRect();
-
-    endX = (e.clientX - rect.left) *
-           (canvas.width / rect.width);
-
-    endY = (e.clientY - rect.top) *
-           (canvas.height / rect.height);
-
-    fetch("/set_roi", {
 
         method: "POST",
 
@@ -482,18 +632,34 @@ canvas.addEventListener("mouseup", (e) => {
         },
 
         body: JSON.stringify({
-
-            x1: Math.min(startX, endX),
-            y1: Math.min(startY, endY),
-
-            x2: Math.max(startX, endX),
-            y2: Math.max(startY, endY)
-
+            camera_id: cameraId
         })
 
-    });
+    })
 
-});
+    .then(response => {
+
+        if(!response.ok)
+            throw new Error("Failed to reset ROI");
+
+        const instance =
+            cameraInstances[cameraId];
+
+        instance.drawing = false;
+
+        instance.startX = 0;
+        instance.startY = 0;
+        instance.endX = 0;
+        instance.endY = 0;
+    })
+
+    .catch(error => {
+        console.error(error);
+    });
+}
+
+
+
 
 let lastAlertId = null;
 
@@ -615,6 +781,7 @@ document.addEventListener(
 );
 
 </script>
+
 <div id="alertModal"
      style="
      display:none;
