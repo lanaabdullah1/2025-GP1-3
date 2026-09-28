@@ -1,0 +1,868 @@
+{% extends "layouts/user_layout.html" %}
+
+{% block content %}
+
+<style>
+
+.camera-wrapper{
+    position:relative;
+    width:100%;
+    background:#000;
+    border-radius:16px;
+    overflow:hidden;
+}
+
+
+.camera-panel{
+    width:100%;
+    background:#fff;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:18px;
+}
+
+.camera-panel:last-child{
+    margin-bottom:0;
+}
+
+.camera-canvas{
+    width:100%;
+    display:block;
+    border-radius:16px;
+    cursor:crosshair;
+}
+
+.camera-overlay{
+    position:absolute;
+    inset:0;
+    background:transparent;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:10;
+    cursor:pointer;
+}
+
+.camera-overlay-content{
+    text-align:center;
+}
+
+.camera-overlay-content i{
+    color:#fff;
+    font-size:70px;
+}
+
+.camera-overlay-content h5{
+    color:#fff;
+    margin-top:15px;
+}
+
+.camera-btn{
+    border:none;
+    width:52px;
+    height:52px;
+    border-radius:14px;
+    color:#fff;
+    font-size:18px;
+    transition:.2s;
+}
+
+.camera-btn:hover{
+    transform:scale(1.05);
+}
+
+.stop-btn{
+    background:#35507a;
+}
+
+.roi-btn{
+    background:#f39a1f;
+}
+
+
+
+.camera-card:hover{
+    transform:translateY(-2px);
+}
+
+
+
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="dashboard_property">
+
+            <h4 class="mb-3">Live Monitoring</h4>
+
+            {% if cameras %}
+
+            <div class="row">
+
+                {% for c in cameras %}
+
+                <div class="col-12">
+
+                    <div
+                        class="camera-panel"
+                        data-camera-id="{{ c[0] }}">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+
+                            <div>
+
+                                <h5 class="mb-0">
+                                    {{ c[1] }}
+                                </h5>
+
+                                <small class="text-muted">
+                                    {{ c[3]|upper }} · Live Monitoring
+                                </small>
+
+                            </div>
+
+                            <div class="d-flex gap-2">
+
+                                <button
+                                    class="camera-btn stop-btn"
+                                    type="button"
+                                    onclick="toggleCamera('{{ c[0] }}')">
+
+                                    <i
+                                        id="toggleIcon-{{ c[0] }}"
+                                        class="fas fa-pause">
+                                    </i>
+
+                                </button>
+
+                                <button
+                                    class="camera-btn roi-btn"
+                                    type="button"
+                                    onclick="resetROI('{{ c[0] }}')">
+
+                                    <i class="fas fa-vector-square"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="camera-wrapper">
+
+                            <canvas
+                                id="canvas-{{ c[0] }}"
+                                class="camera-canvas">
+                            </canvas>
+
+                            <div
+                                id="cameraOverlay-{{ c[0] }}"
+                                class="camera-overlay"
+                                onclick="toggleCamera('{{ c[0] }}')">
+
+                                <div class="camera-overlay-content">
+
+                                    <i
+                                        id="overlayIcon-{{ c[0] }}"
+                                        class="fas fa-play">
+                                    </i>
+
+                                    <h5
+                                        id="overlayText-{{ c[0] }}">
+                                    </h5>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-warning">
+                No cameras found
+            </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+
+
+const cameraInstances = {};
+
+document.querySelectorAll(".camera-panel").forEach(panel => {
+
+    const cameraId = panel.dataset.cameraId;
+    const canvas = document.getElementById(`canvas-${cameraId}`);
+
+    cameraInstances[cameraId] = {
+        id: cameraId,
+        canvas: canvas,
+        ctx: canvas.getContext("2d"),
+        img: new Image(),
+
+        playing: true,
+        drawing: false,
+
+        cameraLoaded: false,
+        cameraTimeout: null,
+
+        wasOnline: false,
+
+        startX: 0,
+        startY: 0,
+        endX: 0,
+        endY: 0
+    };
+});
+
+function loadCamera(cameraId){
+
+    const instance = cameraInstances[cameraId];
+
+    if(!instance)
+        return;
+
+    instance.cameraLoaded = false;
+
+    clearTimeout(instance.cameraTimeout);
+
+    instance.cameraTimeout = setTimeout(() => {
+
+        if(!instance.cameraLoaded && instance.playing){
+
+            showOfflineOverlay(cameraId);
+        }
+
+    }, 4000);
+
+    instance.img.src =
+        "/video_feed/" + cameraId + "?" + Date.now();
+}
+
+
+
+
+
+
+function showOfflineOverlay(cameraId){
+
+    document.getElementById(
+        "cameraOverlay-" + cameraId
+    ).style.display = "flex";
+
+    document.getElementById(
+        "overlayIcon-" + cameraId
+    ).className = "fas fa-video-slash";
+
+    document.getElementById(
+        "overlayText-" + cameraId
+    ).innerText =
+        "Camera is offline or not configured properly";
+}
+
+
+function hideOfflineOverlay(cameraId){
+
+    document.getElementById(
+        "cameraOverlay-" + cameraId
+    ).style.display = "none";
+}
+
+
+function checkCameraStatus(cameraId){
+
+    const instance = cameraInstances[cameraId];
+
+    if(!instance || !instance.playing)
+        return;
+
+    fetch("/camera_status/" + cameraId)
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if(data.status === "ok"){
+
+            hideOfflineOverlay(cameraId);
+
+            if(!instance.wasOnline){
+
+                instance.wasOnline = true;
+
+                loadCamera(cameraId);
+            }
+
+        }else{
+
+            instance.wasOnline = false;
+
+            instance.img.src = "";
+
+            showOfflineOverlay(cameraId);
+        }
+
+    })
+
+    .catch(() => {
+
+        instance.wasOnline = false;
+
+        instance.img.src = "";
+
+        showOfflineOverlay(cameraId);
+    });
+}
+
+function checkAllCameraStatuses(){
+
+    Object.keys(cameraInstances).forEach(cameraId => {
+        checkCameraStatus(cameraId);
+    });
+}
+
+
+
+setInterval(
+    checkAllCameraStatuses,
+    5000
+);
+
+
+function getCanvasPoint(instance, event){
+
+    const rect =
+        instance.canvas.getBoundingClientRect();
+
+    return {
+        x:
+            (event.clientX - rect.left) *
+            (instance.canvas.width / rect.width),
+
+        y:
+            (event.clientY - rect.top) *
+            (instance.canvas.height / rect.height)
+    };
+}
+
+
+Object.values(cameraInstances).forEach(instance => {
+
+    const cameraId = instance.id;
+
+    instance.img.onload = function(){
+
+        instance.cameraLoaded = true;
+        instance.wasOnline = true;
+
+        clearTimeout(
+            instance.cameraTimeout
+        );
+
+        instance.canvas.width =
+            instance.img.naturalWidth;
+
+        instance.canvas.height =
+            instance.img.naturalHeight;
+
+        hideOfflineOverlay(cameraId);
+    };
+
+
+    instance.img.onerror = function(){
+
+        instance.cameraLoaded = false;
+        instance.wasOnline = false;
+
+        if(instance.playing){
+            showOfflineOverlay(cameraId);
+        }
+    };
+
+
+    instance.canvas.addEventListener(
+    "mousedown",
+    (e) => {
+
+        if(!instance.playing)
+            return;
+
+        instance.drawing = true;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.startX = point.x;
+        instance.startY = point.y;
+
+        instance.endX = point.x;
+        instance.endY = point.y;
+    }
+);
+
+    instance.canvas.addEventListener(
+    "mousemove",
+    (e) => {
+
+        if(!instance.drawing)
+            return;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.endX = point.x;
+        instance.endY = point.y;
+    }
+);
+
+
+    instance.canvas.addEventListener(
+    "mouseup",
+    (e) => {
+
+        if(!instance.playing)
+            return;
+
+        instance.drawing = false;
+
+        const point =
+            getCanvasPoint(instance, e);
+
+        instance.endX = point.x;
+        instance.endY = point.y;
+
+        const x1 =
+            Math.min(
+                instance.startX,
+                instance.endX
+            );
+
+        const y1 =
+            Math.min(
+                instance.startY,
+                instance.endY
+            );
+
+        const x2 =
+            Math.max(
+                instance.startX,
+                instance.endX
+            );
+
+        const y2 =
+            Math.max(
+                instance.startY,
+                instance.endY
+            );
+
+        if(x2 <= x1 || y2 <= y1)
+            return;
+
+        fetch("/set_roi", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                camera_id: cameraId,
+                x1: x1,
+                y1: y1,
+                x2: x2,
+                y2: y2
+            })
+        });
+    }
+);
+
+    instance.canvas.addEventListener(
+    "mouseleave",
+    () => {
+
+        if(!instance.drawing)
+            return;
+
+        instance.drawing = false;
+    }
+);
+
+//loadCamera(cameraId);
+checkCameraStatus(cameraId);
+
+
+});
+
+
+function draw(){
+
+    Object.values(cameraInstances).forEach(instance => {
+
+        if(
+            instance.img.complete &&
+            instance.img.naturalWidth > 0 &&
+            instance.playing
+        ){
+
+            instance.ctx.drawImage(
+                instance.img,
+                0,
+                0,
+                instance.canvas.width,
+                instance.canvas.height
+            );
+
+            if(instance.drawing){
+
+                const x =
+                    Math.min(
+                        instance.startX,
+                        instance.endX
+                    );
+
+                const y =
+                    Math.min(
+                        instance.startY,
+                        instance.endY
+                    );
+
+                const w =
+                    Math.abs(
+                        instance.endX -
+                        instance.startX
+                    );
+
+                const h =
+                    Math.abs(
+                        instance.endY -
+                        instance.startY
+                    );
+
+                instance.ctx.strokeStyle = "red";
+                instance.ctx.lineWidth = 2;
+
+                instance.ctx.strokeRect(
+                    x,
+                    y,
+                    w,
+                    h
+                );
+            }
+        }
+    });
+
+    requestAnimationFrame(draw);
+}
+
+draw();
+
+function toggleCamera(cameraId){
+
+    const instance = cameraInstances[cameraId];
+
+    if(!instance)
+        return;
+
+    const overlay =
+        document.getElementById(
+            "cameraOverlay-" + cameraId
+        );
+
+    if(instance.playing){
+
+        instance.img.src = "";
+
+        overlay.style.display = "flex";
+
+        document.getElementById(
+            "overlayIcon-" + cameraId
+        ).className = "fas fa-play";
+
+        document.getElementById(
+            "overlayText-" + cameraId
+        ).innerText = "";
+
+        document.getElementById(
+            "toggleIcon-" + cameraId
+        ).className = "fas fa-play";
+
+        instance.playing = false;
+
+    }else{
+
+        overlay.style.display = "none";
+
+        document.getElementById(
+            "toggleIcon-" + cameraId
+        ).className = "fas fa-pause";
+
+        instance.playing = true;
+
+        instance.wasOnline = false;
+
+        checkCameraStatus(cameraId);
+    }
+}
+
+
+function resetROI(cameraId){
+
+    fetch("/reset_roi", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            camera_id: cameraId
+        })
+
+    })
+
+    .then(response => {
+
+        if(!response.ok)
+            throw new Error("Failed to reset ROI");
+
+        const instance =
+            cameraInstances[cameraId];
+
+        instance.drawing = false;
+
+        instance.startX = 0;
+        instance.startY = 0;
+        instance.endX = 0;
+        instance.endY = 0;
+    })
+
+    .catch(error => {
+        console.error(error);
+    });
+}
+
+
+
+
+let lastAlertId = null;
+
+fetch("/latest_alert")
+
+.then(r => r.json())
+
+.then(data => {
+
+    if(data.status == "ok"){
+
+        lastAlertId = data.id;
+    }
+});
+
+setInterval(checkAlerts, 2000);
+
+function checkAlerts(){
+
+    fetch("/latest_alert")
+
+    .then(r => r.json())
+
+    .then(data => {
+
+        if(data.status != "ok")
+            return;
+
+        if(data.id == lastAlertId)
+            return;
+
+        lastAlertId = data.id;
+
+        showAlert(data);
+
+    });
+
+}
+
+function showAlert(data){
+
+    document.getElementById("alertModal")
+    .style.display = "flex";
+
+    document.getElementById("alertTitle")
+    .innerText =
+    data.threat_level + " Threat Detected";
+
+    document.getElementById("alertText")
+    .innerText =
+    data.reason;
+
+    let sound =
+    document.getElementById("alertSound");
+
+    sound.pause();
+
+    sound.currentTime = 0;
+
+    const promise = sound.play();
+
+    if (promise !== undefined) {
+
+        promise
+        .then(() => {})
+        .catch(error => {
+            console.log(error);
+        });
+    }
+}
+
+function closeAlert(){
+
+    document.getElementById("alertModal")
+    .style.display = "none";
+}
+
+let audioUnlocked = false;
+
+function unlockAudio(){
+
+    if(audioUnlocked) return;
+
+    let sound =
+    document.getElementById("alertSound");
+
+    sound.volume = 0;
+
+    const p = sound.play();
+
+    if(p !== undefined){
+
+        p.then(() => {
+
+            sound.pause();
+
+            sound.currentTime = 0;
+
+            sound.volume = 1;
+
+            audioUnlocked = true;
+
+        })
+
+        .catch(() => {});
+    }
+}
+
+document.addEventListener(
+    "click",
+    unlockAudio,
+    { once:true }
+);
+
+document.addEventListener(
+    "touchstart",
+    unlockAudio,
+    { once:true }
+);
+
+</script>
+
+<div id="alertModal"
+     style="
+     display:none;
+     position:fixed;
+     inset:0;
+     background:rgba(0,0,0,.65);
+     z-index:99999;
+     align-items:center;
+     justify-content:center;
+     ">
+
+    <div style="
+        width:420px;
+        background:#fff;
+        border-radius:18px;
+        padding:25px;
+        text-align:center;
+    ">
+
+        <div style="
+            width:90px;
+            height:90px;
+            background:#ffefef;
+            color:#ff3b30;
+            border-radius:50%;
+            margin:auto;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:40px;
+        ">
+
+            <i class="fas fa-exclamation-triangle"></i>
+
+        </div>
+
+        <h3
+            id="alertTitle"
+            style="margin-top:20px;">
+
+            Threat Detected
+
+        </h3>
+
+        <p
+            id="alertText"
+            style="
+            color:#666;
+            margin-top:10px;
+            ">
+
+        </p>
+
+        <button
+            onclick="closeAlert()"
+            style="
+            margin-top:20px;
+            width:100%;
+            border:none;
+            background:#35507a;
+            color:#fff;
+            height:50px;
+            border-radius:12px;
+            font-size:16px;
+            ">
+
+            OK
+
+        </button>
+
+    </div>
+
+</div>
+
+<audio
+    id="alertSound"
+    preload="auto">
+
+    <source
+        src="/assets/alert.mp3"
+        type="audio/mpeg">
+
+</audio>
+{% endblock %}
