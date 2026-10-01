@@ -485,6 +485,7 @@ Eyecept Team
 # SMS
 # =========================
 
+'''
 from twilio.rest import Client
 
 ACCOUNT_SID = "ACd523fc3578ce93d7ab905a3bcbee5bca"
@@ -500,7 +501,35 @@ def send_sms(to_phone, code):
         from_=FROM_PHONE,
         to=to_phone
     )
-    
+'''    
+import requests
+from requests.auth import HTTPBasicAuth
+
+SMSGATE_URL = "http://192.168.0.153:8080/message"
+SMSGATE_USERNAME = "sms"
+SMSGATE_PASSWORD = "ZUn8HSbO"
+
+
+def send_sms_gateway(to_phone, message):
+    response = requests.post(
+        SMSGATE_URL,
+        json={
+            "textMessage": {
+                "text": message
+            },
+            "phoneNumbers": [
+                to_phone
+            ]
+        },
+        auth=HTTPBasicAuth(
+            SMSGATE_USERNAME,
+            SMSGATE_PASSWORD
+        ),
+        timeout=10
+    )
+
+    response.raise_for_status()
+    return response.json()
     
 def create_camera(
         name,
@@ -587,7 +616,38 @@ def delete_camera(camera_id):
     """, (camera_id,))
 
     conn.commit()
-    conn.close()        
+    conn.close()    
+
+
+
+def get_camera_by_name(name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM cameras WHERE name = ?",
+        (name,)
+    )
+
+    camera = cursor.fetchone()
+    conn.close()
+
+    return camera
+
+
+def get_camera_by_source(source):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM cameras WHERE source = ?",
+        (source,)
+    )
+
+    camera = cursor.fetchone()
+    conn.close()
+
+    return camera        
     
     
 def get_latest_alert():
