@@ -843,7 +843,8 @@ def register_routes(app):
 
         return redirect(url_for("cameras_list"))        
     
-   
+
+
     @app.route("/camera_status/<int:camera_id>")
     def camera_status(camera_id):
 
@@ -854,52 +855,69 @@ def register_routes(app):
 
         source = camera[2]
         camera_type = camera[3]
-        
         is_active = camera[5]
 
         if is_active == 0:
             return {"status": "disabled"}
 
         try:
+
+            # ==========================================
+            # FIRST: check the actual monitoring stream
+            # ==========================================
+
+            last_seen = camera_last_frame_time.get(camera_id)
+
+            if last_seen is not None:
+
+                # If a real frame arrived recently,
+                # the camera is online.
+                if time.time() - last_seen < 10:
+                    return {"status": "ok"}
+
+            # ==========================================
+            # FALLBACK CHECK
+            # Used when stream has not started yet
+            # or no frame has arrived recently.
+            # ==========================================
+
             if camera_type == "ip":
 
                 ip, port = source.split(":")
                 port = int(port)
 
-                
                 try:
-                    socket.create_connection((ip, port), timeout=1).close()
+                    socket.create_connection(
+                        (ip, port),
+                        timeout=1
+                    ).close()
+
+                    return {"status": "ok"}
+
                 except:
                     return {"status": "fail"}
 
-                video_source = "http://" + source + "/video"
-
             else:
+
                 video_source = int(source)
 
-                
+                cap = cv2.VideoCapture(
+                    video_source,
+                    cv2.CAP_DSHOW
+                )
 
-                last_seen = camera_last_frame_time.get(camera_id)
+                ok, frame = cap.read()
+                cap.release()
 
-                if last_seen and time.time() - last_seen < 10:
+                if ok and frame is not None:
                     return {"status": "ok"}
 
+                return {"status": "fail"}
 
-            if camera_type == "usb":
-                cap = cv2.VideoCapture(video_source, cv2.CAP_DSHOW)
-            else:
-                cap = cv2.VideoCapture(video_source)
+        except Exception as e:
 
-            ok, frame = cap.read()
-            
-            cap.release()
+            print("Camera status error:", e)
 
-            if ok and frame is not None:
-                return {"status": "ok"}
-
-            return {"status": "fail"}
-
-        except:
             return {"status": "fail"}
 
 
