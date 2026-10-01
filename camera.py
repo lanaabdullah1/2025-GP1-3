@@ -469,6 +469,8 @@ def generate_frames(source, camera_id=1):
 
     total_read_time = 0
     total_yolo_time = 0
+    total_reid_time = 0
+    total_hand_time = 0
     total_encode_time = 0
 
     current_fps = 0
@@ -708,6 +710,8 @@ def generate_frames(source, camera_id=1):
                 # RE-ID EMBEDDING
                 # =========================
 
+                reid_start = time.perf_counter()
+
                 embedding = get_person_embedding(
                     person_crop
                 )
@@ -718,6 +722,10 @@ def generate_frames(source, camera_id=1):
 
                 reid_result = get_global_person_id(
                     embedding
+                )
+
+                total_reid_time += (
+                    time.perf_counter() - reid_start
                 )
 
                 if reid_result is not None:
@@ -780,6 +788,8 @@ def generate_frames(source, camera_id=1):
             #=======================
             #NEW CODE FOR ABOVE 
             #=======================
+            hand_start = time.perf_counter()
+
             rgb = cv2.cvtColor(
                 frame,
                 cv2.COLOR_BGR2RGB
@@ -795,6 +805,10 @@ def generate_frames(source, camera_id=1):
             hand_results = worker_hands.detect_for_video(
                 mp_image,
                 timestamp_ms
+            )
+
+            total_hand_time += (
+                time.perf_counter() - hand_start
             )
 
             detected_hands = (
@@ -1017,6 +1031,14 @@ def generate_frames(source, camera_id=1):
                 total_yolo_time / perf_frame_count
             ) * 1000
 
+            avg_reid_ms = (
+                total_reid_time / perf_frame_count
+            ) * 1000
+
+            avg_hand_ms = (
+                total_hand_time / perf_frame_count
+            ) * 1000
+
             avg_encode_ms = (
                 total_encode_time / perf_frame_count
             ) * 1000
@@ -1033,6 +1055,8 @@ def generate_frames(source, camera_id=1):
                 f"FPS: {current_fps:.2f} | "
                 f"Read: {avg_read_ms:.1f} ms | "
                 f"YOLO: {avg_yolo_ms:.1f} ms | "
+                f"ReID: {avg_reid_ms:.1f} ms | "
+                f"Hand: {avg_hand_ms:.1f} ms | "
                 f"Encode: {avg_encode_ms:.1f} ms"
             )
 
@@ -1041,6 +1065,8 @@ def generate_frames(source, camera_id=1):
 
             total_read_time = 0
             total_yolo_time = 0
+            total_reid_time = 0
+            total_hand_time = 0
             total_encode_time = 0
 
         # ============================================================
