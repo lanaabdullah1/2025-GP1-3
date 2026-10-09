@@ -101,20 +101,29 @@
 
                                 <div class="_leads_action">
 
-                                    <a href="/camera_update/{{ c[0] }}">
+                                    <a href="/camera_update/{{ c[0] }}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="bottom"
+                                        data-bs-title="Edit this camera's information"
+                                        aria-label="Edit camera">
 
-                                        <i class="fas fa-edit"></i>
+                                            <i class="fas fa-edit"></i>
 
                                     </a>
-                                    
+                                                                            
                                     <a href="#"
-                                    onclick="showConfirmModal('Are you sure you want to delete this camera?', function() {
-                                        window.location.href = '/camera_delete/{{ c[0] }}';
-                                    }); return false;">
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="bottom"
+                                        data-bs-title="Delete this camera from the system"
+                                        aria-label="Delete camera"
+                                        onclick="showConfirmModal('Are you sure you want to delete camera: {{ c[1] }}?', function() {
+                                            window.location.href = '/camera_delete/{{ c[0] }}';
+                                        }); return false;">
 
-                                        <i class="fas fa-trash"></i>
+                                            <i class="fas fa-trash"></i>
 
                                     </a>
+
 
                                 </div>
 
@@ -137,13 +146,19 @@
     </div>
 </div>
 
-        <script>
+<script>
 
 function checkCameraStatus(badge) {
 
     const cameraId = badge.dataset.cameraId;
 
-    fetch("/camera_status/" + cameraId)
+    const controller = new AbortController();
+
+    setTimeout(() => controller.abort(), 6000);
+
+    fetch("/camera_status/" + cameraId, {
+        signal: controller.signal
+    })
 
     .then(response => response.json())
 
@@ -189,6 +204,31 @@ function checkAllCameras() {
 checkAllCameras();
 
 setInterval(checkAllCameras, 5000);
+
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (!window.bootstrap || !bootstrap.Tooltip) {
+        console.warn("Bootstrap tooltips are not available.");
+        return;
+    }
+
+    document.querySelectorAll(
+        '._leads_action [data-bs-toggle="tooltip"]'
+    ).forEach(function (element) {
+
+        bootstrap.Tooltip.getOrCreateInstance(element, {
+            trigger: "hover focus",
+            container: "body"
+        });
+
+    });
+
+});
+
 
 </script>
 

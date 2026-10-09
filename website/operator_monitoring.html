@@ -86,6 +86,13 @@
 }
 
 
+#confirmModal .modal-dialog-centered {
+    align-items: flex-start !important;
+    min-height: auto !important;
+    margin-top: 40px;
+}
+
+
 
 </style>
 
@@ -101,7 +108,8 @@
 
                 {% for c in cameras %}
 
-                <div class="col-12">
+                
+                <div class="col-lg-6 col-md-6 col-12 mb-3">   
 
                     <div
                         class="camera-panel"
@@ -126,6 +134,10 @@
                                 <button
                                     class="camera-btn stop-btn"
                                     type="button"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="bottom"
+                                    data-bs-title="Pause live monitoring"
+                                    aria-label="Pause camera"
                                     onclick="toggleCamera('{{ c[0] }}')">
 
                                     <i
@@ -138,9 +150,16 @@
                                 <button
                                     class="camera-btn roi-btn"
                                     type="button"
-                                    onclick="resetROI('{{ c[0] }}')">
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="bottom"
+                                    data-bs-title="Remove the selected ROI to draw a new one"
+                                    aria-label="Remove ROI"
+                                    onclick="confirmResetROI('{{ c[0] }}')">
 
-                                    <i class="fas fa-vector-square"></i>
+                                    <span class="fa-stack" style="font-size:0.75em;">
+                                        <i class="fas fa-vector-square fa-stack-1x"></i>
+                                        <i class="fas fa-slash fa-stack-1x"></i>
+                                    </span>
 
                                 </button>
 
@@ -586,9 +605,14 @@ function toggleCamera(cameraId){
 
     if(instance.playing){
 
+
+        fetch("/pause_camera/" + cameraId, {
+            method: "POST"
+        });
+
         instance.img.src = "";
 
-        overlay.style.display = "flex";
+        overlay.style.display = "none";
 
         document.getElementById(
             "overlayIcon-" + cameraId
@@ -604,6 +628,18 @@ function toggleCamera(cameraId){
 
         instance.playing = false;
 
+
+        const pauseButton = document.getElementById("toggleIcon-" + cameraId).closest("button");
+        const pauseTooltip = window.bootstrap?.Tooltip?.getInstance(pauseButton);
+
+        pauseTooltip?.hide();
+        pauseTooltip?.setContent({
+            ".tooltip-inner": "Resume live monitoring"
+        });
+
+        pauseButton.setAttribute("aria-label", "Resume camera");
+
+
     }else{
 
         overlay.style.display = "none";
@@ -614,10 +650,32 @@ function toggleCamera(cameraId){
 
         instance.playing = true;
 
+        const resumeButton = document.getElementById("toggleIcon-" + cameraId).closest("button");
+        const resumeTooltip = window.bootstrap?.Tooltip?.getInstance(resumeButton);
+
+        resumeTooltip?.hide();
+        resumeTooltip?.setContent({
+            ".tooltip-inner": "Pause live monitoring"
+        });
+
+        resumeButton.setAttribute("aria-label", "Pause camera");
+
         instance.wasOnline = false;
 
         checkCameraStatus(cameraId);
     }
+}
+
+
+function confirmResetROI(cameraId){
+
+    showConfirmModal(
+        "Are you sure you want to clear the ROI?",
+        function () {
+            resetROI(cameraId);
+        }
+    );
+
 }
 
 
@@ -651,6 +709,15 @@ function resetROI(cameraId){
         instance.startY = 0;
         instance.endX = 0;
         instance.endY = 0;
+
+        const confirmModal =
+            window.bootstrap.Modal.getInstance(
+                document.getElementById("confirmModal")
+            );
+
+        if (confirmModal) {
+            confirmModal.hide();
+        }
     })
 
     .catch(error => {
@@ -781,6 +848,31 @@ document.addEventListener(
 );
 
 </script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Initialize only Operator Monitoring tooltips
+    if (!window.bootstrap || !bootstrap.Tooltip) {
+        console.warn("Bootstrap tooltips are not available.");
+        return;
+    }
+
+    document.querySelectorAll(
+        '.camera-panel [data-bs-toggle="tooltip"]'
+    ).forEach(function (button) {
+
+        bootstrap.Tooltip.getOrCreateInstance(button, {
+            trigger: "hover",
+            container: "body"
+        });
+
+    });
+
+});
+</script>
+
 
 <div id="alertModal"
      style="
