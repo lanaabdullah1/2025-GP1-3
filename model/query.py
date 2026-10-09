@@ -578,7 +578,6 @@ def update_camera(
         name,
         source,
         camera_type,
-        status,
         is_active
     ):
         conn = get_connection()
@@ -590,20 +589,18 @@ def update_camera(
                 name = ?,
                 source = ?,
                 camera_type = ?,
-                status = ?,
                 is_active = ?
             WHERE id = ?
         """, (
             name,
             source,
             camera_type,
-            status,
             is_active,
             camera_id
         ))
 
         conn.commit()
-        conn.close()        
+        conn.close()
         
         
 def delete_camera(camera_id):
